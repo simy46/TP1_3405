@@ -4,15 +4,15 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 
 public class Serveur {
-	
-	private static ServerSocket Listener; 
+
+	private static ServerSocket Listener;
 	// Application Serveur
-	
+
 	public static void main(String[] args) throws Exception {
 		// Compteur incrémenté à chaque connexion d'un client au serveur
 		int clientNumber = 0;
 		// Adresse et port du serveur
-		String serverAddress = "127.0.0.1"; 
+		String serverAddress = "10.200.12.99";
 		int serverPort = 5000;
 		// Création de la connexien pour communiquer ave les, clients
 		Listener = new ServerSocket();
@@ -25,11 +25,14 @@ public class Serveur {
 			// À chaque fois qu'un nouveau client se, connecte, on exécute la fonstion
 			// run() de l'objet ClientHandler
 			while (true) {
-				// Important : la fonction accept() est bloquante: attend qu'un prochain client se connecte
-				// Une nouvetle connection : on incémente le compteur clientNumber 
+				// Important : la fonction accept() est bloquante: attend qu'un prochain client
+				// se connecte
+				// Une nouvetle connection : on incémente le compteur clientNumber
 				new ClientHandler(Listener.accept(), clientNumber++).start();
 			}
 		} finally {
 			// Fermeture de la connexion
 			Listener.close();
-		} } }
+		}
+	}
+}
