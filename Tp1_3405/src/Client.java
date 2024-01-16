@@ -4,6 +4,18 @@ import java.net.Socket;
 // Application client
 public class Client {
 	private static Socket socket;
+	
+	public boolean verificationPort (int port) {
+		while (port <= 5000 || port >= 5050) {
+			return false;
+		}
+		return true;
+	}
+	
+	public void verificationipAdresse (char[] ipAddress) {
+		
+	}
+	
 	public static void main(String[] args) throws Exception {
 		// Adresse et port du serveur
 		String serverAddress = "10.200.12.99";
