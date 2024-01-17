@@ -8,7 +8,7 @@ public class Client {
 	private static String username;
 	private static String password;
 
-	public boolean verificationPort(int port) {
+	public static boolean verificationPort(int port) {
 		return port > 5000 && port < 5050;
 	}
 
@@ -36,6 +36,8 @@ public class Client {
 		}
 		return true; // si tous les etpaes de verifications sont passees.
 	}
+	
+	
 
 
 	public static void main(String[] args) {
@@ -45,22 +47,22 @@ public class Client {
 			int port = 5030;
 
 			boolean correctFormat;
+			Scanner scanner = new Scanner(System.in);
 			do {
-				Scanner scanner = new Scanner(System.in);
-				System.out.println("Entrez l'adresse ipv4 du serveur :");
+				
+				System.out.println("Entrez l'adresse ipv4 du serveur : ");
 				serverAddress = scanner.nextLine();
 				correctFormat = ipVerification(serverAddress);
 				if (!correctFormat) System.out.println("mauvais format d'adresse ip, veuillez recommencer. \n");
 
 			} while (!correctFormat);
 
-			Scanner usernameScanner = new Scanner(System.in);
 			System.out.println("Enter username");
-			username = usernameScanner.nextLine();
-
-			Scanner passwordScanner = new Scanner(System.in);
+			username = scanner.nextLine();
 			System.out.println("Enter password");
-			password = passwordScanner.nextLine();
+			password = scanner.nextLine();
+			
+			scanner.close();
 
 
 			// Création d'une nouvelle connexion avec le serveur

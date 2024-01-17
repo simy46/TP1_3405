@@ -10,13 +10,6 @@ public class Serveur {
 
 	private static ServerSocket Listener;
 	
-	
-	public boolean verificationPort (int port) {
-		while (port <= 5000 || port >= 5050) {
-			return false;
-		}
-		return true;
-	}
 
 	// Application Serveur
 	public static void main(String[] args) throws Exception {

@@ -7,10 +7,13 @@ public class ClientHandler extends Thread { // pour traiter la demande de chaque
 	private Socket socket;
 	private int clientNumber;
 	private String username;
+	
 	public ClientHandler(Socket socket, int clientNumber, String username) {
+		
 	    this.socket = socket;
 	    this.clientNumber = clientNumber;
 	    this.username = username;
+	    
 	    System.out.println(String.format("New connection with %s: (%d) at %s", username, clientNumber, socket));
 	}
 
