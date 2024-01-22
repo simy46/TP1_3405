@@ -46,16 +46,38 @@ public class Client {
 			String serverAddress; //"10.200.12.99"
 			int port = 5030;
 
-			boolean correctFormat;
+			boolean correctIpFormat;
+			boolean correctPortFormat;
 			Scanner scanner = new Scanner(System.in);
 			do {
-				
-				System.out.println("Entrez l'adresse ipv4 du serveur : ");
-				serverAddress = scanner.nextLine();
-				correctFormat = ipVerification(serverAddress);
-				if (!correctFormat) System.out.println("mauvais format d'adresse ip, veuillez recommencer. \n");
+                System.out.println("Entrez l'adresse IPv4 du serveur : ");
+                serverAddress = scanner.nextLine();
+                correctIpFormat = ipVerification(serverAddress);
 
-			} while (!correctFormat);
+                if (!correctIpFormat) {
+                    System.out.println("Mauvais format d'adresse IP, veuillez recommencer. \n");
+                }
+
+            } while (!correctIpFormat);
+			
+			do {
+                System.out.println("Entrez le port du serveur (entre 5000 et 5050) : ");
+                String portString = scanner.nextLine();
+
+                try {
+                    port = Integer.parseInt(portString);
+                    correctPortFormat = verificationPort(port);
+
+                    if (!correctPortFormat) {
+                        System.out.println("Mauvais format de port, veuillez recommencer. \n");
+                    }
+
+                } catch (NumberFormatException e) {
+                    System.out.println("Mauvais format de port, veuillez entrer un nombre entier. \n");
+                    correctPortFormat = false;
+                }
+
+            } while (!correctPortFormat);
 
 			System.out.println("Enter username");
 			username = scanner.nextLine();

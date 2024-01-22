@@ -62,7 +62,7 @@ public class Serveur {
 		int clientNumber = 0;
 		
 		// Adresse et port du serveur
-		String serverAddress = "10.200.12.99";
+		String serverAddress = "172.20.10.4";
 		int serverPort = 5030;
 		
 		// Création de la connexien pour communiquer avec les clients
