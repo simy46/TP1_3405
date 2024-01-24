@@ -30,7 +30,7 @@ public class Serveur {
 		
 		// Compteur incrémenté à chaque connexion d'un client au serveur
 		int clientNumber = 0;
-		Client.askingForIpAndPort();
+		// Client.askingForIpAndPort();
 		
 		// Adresse et port du serveur
 		String serverAddress = "10.200.12.99";

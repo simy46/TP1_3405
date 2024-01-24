@@ -6,11 +6,12 @@ import java.net.UnknownHostException;
 import java.util.Scanner;
 
 public class Client {
-	private static Socket socket;
+    private static Socket socket;
     private static String username;
     private static String password;
     private static String serverIP;
     private static int serverPort;
+    private static boolean disconnect = false;
 
     public static boolean verificationPort(int port) {
         return port > 5000 && port < 5050;
@@ -70,38 +71,31 @@ public class Client {
 
         } while (!correctPortFormat);
     }
-
-    public static void askingForUsernameAndPassword() {
+    
+    private static void askingForUsernameAndPassword() {
         Scanner scanner = new Scanner(System.in);
 
         System.out.println("Entrez le nom d'utilisateur : ");
         username = scanner.nextLine();
         System.out.println("Entrez le mot de passe : ");
         password = scanner.nextLine();
-
-        // Validation ou vérification du nom d'utilisateur peut être ajoutée ici.
-
-        // Ne fermez pas le scanner ici, car il est utilisé pour la saisie de l'adresse IP et du port.
     }
 
     public static void connectToServer() throws UnknownHostException, IOException {
         try {
             socket = new Socket(serverIP, serverPort);
-            System.out.format("Connecté au serveur sur [%s : %d]%n", serverIP, serverPort);
+            System.out.format("Connecté au serveur sur [%s : %d] %n", serverIP, serverPort);
 
             DataOutputStream outClient = new DataOutputStream(socket.getOutputStream());
             DataInputStream inClient = new DataInputStream(socket.getInputStream());
 
-            System.out.println("Veuillez entrer votre nom d'utilisateur : ");
-            username = new Scanner(System.in).nextLine();
-            System.out.println("Veuillez entrer votre mot de passe : ");
-            password = new Scanner(System.in).nextLine();
+            askingForUsernameAndPassword();
 
             outClient.writeUTF(username);
             outClient.writeUTF(password);
 
             String responseFromServer = inClient.readUTF();
-            System.out.println(responseFromServer);
+            System.out.println("Réponse du serveur : " + responseFromServer);
 
         } finally {
             if (socket != null && !socket.isClosed()) {
@@ -109,13 +103,19 @@ public class Client {
             }
         }
     }
-    
+
     public static void sendMessageToServer() throws IOException {
-        try (Scanner scanner = new Scanner(System.in);
-             DataOutputStream outClient = new DataOutputStream(socket.getOutputStream())) {
+        try (
+            Scanner scanner = new Scanner(System.in);
+            DataOutputStream outClient = new DataOutputStream(socket.getOutputStream())) {
 
             System.out.println("Saisissez votre réponse (200 caractères maximum) : ");
             String userResponse = scanner.nextLine();
+
+            if ("exit".equals(userResponse)) {
+                disconnect = true;
+                socket.close();
+            }
 
             if (userResponse.length() > 200) {
                 System.out.println("La réponse ne doit pas dépasser 200 caractères.");
@@ -129,9 +129,12 @@ public class Client {
     public static void main(String[] args) {
         try {
             askingForIpAndPort();
-            askingForUsernameAndPassword();
             connectToServer();
-            sendMessageToServer();
+
+            while (!disconnect) {
+                sendMessageToServer();
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
         }
