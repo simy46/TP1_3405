@@ -1,113 +1,139 @@
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.Scanner;
 
 public class Client {
 	private static Socket socket;
-	private static String username;
-	private static String password;
+    private static String username;
+    private static String password;
+    private static String serverIP;
+    private static int serverPort;
 
-	public static boolean verificationPort(int port) {
-		return port > 5000 && port < 5050;
-	}
+    public static boolean verificationPort(int port) {
+        return port > 5000 && port < 5050;
+    }
 
-	public static boolean ipVerification(String ipAdress){
-		// Vérifier s'il y a des points consécutifs ou des points au début ou à la fin
-		if (ipAdress.startsWith(".") || ipAdress.endsWith(".") || ipAdress.contains("..")) return false;
-		//traitement des cas ou la string est vide ou quelle a plus de caractere qu e permis.
-		if (ipAdress.isEmpty() || ipAdress.length() > 15) return false;
+    public static boolean ipVerification(String ipAddress) {
+        if (ipAddress.startsWith(".") || ipAddress.endsWith(".") || ipAddress.contains("..")) return false;
+        if (ipAddress.isEmpty() || ipAddress.length() > 15) return false;
 
-		//split du string que l'utilisateur à input
-		String[] split = ipAdress.split("\\.");
+        String[] split = ipAddress.split("\\.");
 
-		//verification que la structure de IpV4 est respectee. xxx.xxx.xxx.xxx (4 points max)
-		if (split.length != 4) return false;
+        if (split.length != 4) return false;
 
-		//Cast les les string du tableau en int pour verifier qu'il n'y a pas de lettres
-		for ( String i: split) {
-			int number;
-			try {
-				number = Integer.parseInt(i);
-			} catch (NumberFormatException error) {
-				return false;
-			}
-			if (number > 255 || number < 0) return false;
-		}
-		return true; // si tous les etpaes de verifications sont passees.
-	}
-	
-	
+        for (String i : split) {
+            int number;
+            try {
+                number = Integer.parseInt(i);
+            } catch (NumberFormatException error) {
+                return false;
+            }
+            if (number > 255 || number < 0) return false;
+        }
+        return true;
+    }
 
+    public static void askingForIpAndPort() {
+        boolean correctIpFormat;
+        boolean correctPortFormat;
+        Scanner scanner = new Scanner(System.in);
+        do {
+            System.out.println("Entrez l'adresse IPv4 du serveur : ");
+            serverIP = scanner.nextLine();
+            correctIpFormat = ipVerification(serverIP);
 
-	public static void main(String[] args) {
-		try { 
-			// Adresse et port du serveur
-			String serverAddress; //"10.200.12.99"
-			int port = 5030;
+            if (!correctIpFormat) {
+                System.out.println("Format d'adresse IP incorrect, veuillez réessayer. \n");
+            }
 
-			boolean correctIpFormat;
-			boolean correctPortFormat;
-			Scanner scanner = new Scanner(System.in);
-			do {
-                System.out.println("Entrez l'adresse IPv4 du serveur : ");
-                serverAddress = scanner.nextLine();
-                correctIpFormat = ipVerification(serverAddress);
+        } while (!correctIpFormat);
 
-                if (!correctIpFormat) {
-                    System.out.println("Mauvais format d'adresse IP, veuillez recommencer. \n");
+        do {
+            System.out.println("Entrez le port du serveur (entre 5000 et 5050) : ");
+            String portString = scanner.nextLine();
+
+            try {
+                serverPort = Integer.parseInt(portString);
+                correctPortFormat = verificationPort(serverPort);
+
+                if (!correctPortFormat) {
+                    System.out.println("Format de port incorrect, veuillez réessayer. \n");
                 }
 
-            } while (!correctIpFormat);
-			
-			do {
-                System.out.println("Entrez le port du serveur (entre 5000 et 5050) : ");
-                String portString = scanner.nextLine();
+            } catch (NumberFormatException e) {
+                System.out.println("Format de port incorrect, veuillez entrer un nombre entier. \n");
+                correctPortFormat = false;
+            }
 
-                try {
-                    port = Integer.parseInt(portString);
-                    correctPortFormat = verificationPort(port);
+        } while (!correctPortFormat);
+    }
 
-                    if (!correctPortFormat) {
-                        System.out.println("Mauvais format de port, veuillez recommencer. \n");
-                    }
+    public static void askingForUsernameAndPassword() {
+        Scanner scanner = new Scanner(System.in);
 
-                } catch (NumberFormatException e) {
-                    System.out.println("Mauvais format de port, veuillez entrer un nombre entier. \n");
-                    correctPortFormat = false;
-                }
+        System.out.println("Entrez le nom d'utilisateur : ");
+        username = scanner.nextLine();
+        System.out.println("Entrez le mot de passe : ");
+        password = scanner.nextLine();
 
-            } while (!correctPortFormat);
+        // Validation ou vérification du nom d'utilisateur peut être ajoutée ici.
 
-			System.out.println("Enter username");
-			username = scanner.nextLine();
-			System.out.println("Enter password");
-			password = scanner.nextLine();
-			
-			scanner.close();
+        // Ne fermez pas le scanner ici, car il est utilisé pour la saisie de l'adresse IP et du port.
+    }
 
+    public static void connectToServer() throws UnknownHostException, IOException {
+        try {
+            socket = new Socket(serverIP, serverPort);
+            System.out.format("Connecté au serveur sur [%s : %d]%n", serverIP, serverPort);
 
-			// Création d'une nouvelle connexion avec le serveur
-			socket = new Socket(serverAddress, port);
-			System.out.format("Connecté au serveur sur [%s : %d]%n", serverAddress, port);
+            DataOutputStream outClient = new DataOutputStream(socket.getOutputStream());
+            DataInputStream inClient = new DataInputStream(socket.getInputStream());
 
-			// Création des canaux de communication avec le serveur
-			DataOutputStream outClient = new DataOutputStream(socket.getOutputStream());
-			DataInputStream inClient = new DataInputStream(socket.getInputStream());
+            System.out.println("Veuillez entrer votre nom d'utilisateur : ");
+            username = new Scanner(System.in).nextLine();
+            System.out.println("Veuillez entrer votre mot de passe : ");
+            password = new Scanner(System.in).nextLine();
 
-			// Envoi du nom d'utilisateur et du mot de passe au serveur
-			outClient.writeUTF(username);
-			outClient.writeUTF(password);
+            outClient.writeUTF(username);
+            outClient.writeUTF(password);
 
-			// Attente de la réception d'un message envoyé par le serveur sur le canal
-			String helloMessageFromServer = inClient.readUTF();
-			System.out.println(helloMessageFromServer);
+            String responseFromServer = inClient.readUTF();
+            System.out.println(responseFromServer);
 
-			// Fermeture de la connexion avec le serveur
-			socket.close();
+        } finally {
+            if (socket != null && !socket.isClosed()) {
+                socket.close();
+            }
+        }
+    }
+    
+    public static void sendMessageToServer() throws IOException {
+        try (Scanner scanner = new Scanner(System.in);
+             DataOutputStream outClient = new DataOutputStream(socket.getOutputStream())) {
 
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
+            System.out.println("Saisissez votre réponse (200 caractères maximum) : ");
+            String userResponse = scanner.nextLine();
+
+            if (userResponse.length() > 200) {
+                System.out.println("La réponse ne doit pas dépasser 200 caractères.");
+                return;
+            }
+
+            outClient.writeUTF(userResponse);
+        }
+    }
+
+    public static void main(String[] args) {
+        try {
+            askingForIpAndPort();
+            askingForUsernameAndPassword();
+            connectToServer();
+            sendMessageToServer();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }
