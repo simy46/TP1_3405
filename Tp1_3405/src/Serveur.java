@@ -198,8 +198,10 @@ public class Serveur {
                 new ClientHandler(clientSocket, clientNumber++, userName).start();
             }
         } finally {
+            // Ne fermez le Listener que lorsque vous êtes prêt à fermer le serveur
             Listener.close();
         }
+
     }
 
 

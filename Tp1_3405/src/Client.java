@@ -99,25 +99,20 @@ public class Client {
 
 
     public static void sendMessageToServer() throws IOException {
-        try (Scanner scanner = new Scanner(System.in);
-             DataOutputStream outClient = new DataOutputStream(socket.getOutputStream())) {
-
+        try (
+            Scanner scanner = new Scanner(System.in);
+            DataOutputStream outClient = new DataOutputStream(socket.getOutputStream())
+        ) {
             System.out.println("Saisissez votre réponse (200 caractères maximum) ou tapez 'exit' pour quitter : ");
 
             if (scanner.hasNextLine()) {
                 String userResponse = scanner.nextLine();
-
-                if ("exit".equals(userResponse)) {
-                    disconnect = true;
-                    // Ne fermez pas la socket ici
-                } else if (userResponse.length() > 200) {
-                    System.out.println("La réponse ne doit pas dépasser 200 caractères.");
-                } else {
-                    outClient.writeUTF(userResponse);
-                }
+                outClient.writeUTF(userResponse);
             }
         }
     }
+
+
 
     
     public static void main(String[] args) {
@@ -125,13 +120,12 @@ public class Client {
             serverIP = Serveur.askForIP();
             serverPort = Serveur.askForPort();
             connectToServer();
-            while (!disconnect) {
+            while (!ClientHandler.DisconnectRequested()) {
                 sendMessageToServer();
             }
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            // Fermez le socket ici, après avoir terminé toutes les opérations nécessaires
             if (socket != null && !socket.isClosed()) {
                 try {
                     socket.close();
