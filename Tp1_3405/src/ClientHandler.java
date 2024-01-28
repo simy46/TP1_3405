@@ -13,28 +13,37 @@ public class ClientHandler extends Thread {
         this.clientNumber = clientNumber;
         this.username = username;
 
-        System.out.println(String.format("New connection with %s: (%d) at %s", username, clientNumber, socket));
+        System.out.println(String.format("Nouvelle connexion avec %s (%d) sur %s", username, clientNumber, socket));
     }
 
     public void run() {
         try (
-            DataInputStream in = new DataInputStream(socket.getInputStream());
-            DataOutputStream out = new DataOutputStream(socket.getOutputStream())) {
+                DataInputStream in = new DataInputStream(socket.getInputStream());
+                DataOutputStream out = new DataOutputStream(socket.getOutputStream())) {
 
-            // Lecture du nom d'utilisateur et du mot de passe
-            String receivedUsername = in.readUTF();
-            String receivedPassword = in.readUTF();
+            // Informer le client de la connexion réussie
+            out.writeUTF("Connexion réussie. Bienvenue, " + username + "!");
 
-            if (validateUserCredentials(receivedUsername, receivedPassword)) {
-                // Envoyer un message de bienvenue au client
-                out.writeUTF("Bienvenue, " + receivedUsername + "!");
-            } else {
-                // Envoyer un message d'erreur au client
-                out.writeUTF("Erreur d'authentification. Veuillez vérifier vos informations.");
+            // Boucle de traitement des messages du client
+            while (true) {
+                String clientMessage = in.readUTF();
+
+                // Traitez le message ici selon vos besoins
+                System.out.println("Message reçu de " + username + ": " + clientMessage);
+
+                // Vous pouvez ajouter votre logique de traitement ici
+                // Par exemple, vous pourriez diffuser le message à tous les autres clients
+
+                // ...
+
+                // Exemple de réponse au client
+                String response = "Message reçu avec succès.";
+                out.writeUTF(response);
             }
 
         } catch (IOException e) {
-            System.out.println("Erreur lors du traitement du client # " + clientNumber + ": " + e);
+            // Gérer l'exception (par exemple, déconnexion du client)
+            System.out.println("Le client " + username + " s'est déconnecté.");
         } finally {
             try {
                 socket.close();
@@ -43,12 +52,5 @@ public class ClientHandler extends Thread {
             }
             System.out.println(String.format("Connexion avec %s (%d) fermée", new String(username), clientNumber));
         }
-    }
-
-    private boolean validateUserCredentials(String receivedUsername, String receivedPassword) {
-        // Ajoutez ici votre logique pour valider les noms d'utilisateur et les mots de passe
-        // Vous pouvez utiliser la méthode Serveur.usernameExist(username) pour vérifier si l'utilisateur existe
-        // et vérifier le mot de passe correspondant dans la base de données.
-        return Serveur.usernameExist(receivedUsername) && Serveur.getDataBase().get(receivedUsername).equals(receivedPassword);
     }
 }
