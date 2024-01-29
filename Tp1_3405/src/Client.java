@@ -8,131 +8,109 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 
 public class Client {
-    private static Socket socket;
-    private static String username;
-    private static String password;
-    private static String serverIP;
-    private static int serverPort;
-    private static boolean disconnect = false;
+	private static Socket socket;
+	private static String username;
+	private static String password;
+	private static String serverIP;
+	private static int serverPort;
 
 
+	public static void askingForUsernameAndPassword(DataInputStream inClient, DataOutputStream outClient,Scanner scanner) {
+		try {
+			System.out.println("Entrez votre nom d'utilisateur : ");
+			username = scanner.nextLine();
 
-    public static void askingForUsernameAndPassword(DataInputStream inClient, Scanner scanner) {
-        try {
-            // Envoyer le nom d'utilisateur et le mot de passe au serveur (vous avez déjà cela dans votre code)
+			System.out.println("Entrez votre mot de passe : ");
+			password = scanner.nextLine();
 
-            // Attendre la réponse du serveur
-            String responseFromServer = inClient.readUTF();
-            System.out.println("Réponse du serveur : " + responseFromServer);
+			outClient.writeUTF(username);
+			outClient.writeUTF(password);
 
-            // Vérifier si la réponse du serveur indique que les informations d'identification sont valides
-            boolean credentialsValid = responseFromServer.contains("Connexion réussie");
+			String responseFromServer = inClient.readUTF();
+			System.out.println("Réponse du serveur : " + responseFromServer);
 
-            while (!credentialsValid) {
-                System.out.println("Veuillez réessayer.\n");
+			boolean credentialsValid = responseFromServer.contains(Serveur.ANSI_GREEN);
 
-                // Relecture du nom d'utilisateur et du mot de passe
-                System.out.println("Entrez votre nom d'utilisateur : ");
-                username = scanner.nextLine();
 
-                System.out.println("Entrez votre mot de passe : ");
-                password = scanner.nextLine();
+			while (!credentialsValid) {
+				System.out.println(Serveur.ANSI_RED + "Mot de passe incorrect.\n" + Serveur.ANSI_WHITE);
 
-                // Envoyer les nouvelles informations au serveur (vous avez déjà cela dans votre code)
+				System.out.println("Entrez votre mot de passe : ");
+				password = scanner.nextLine();
 
-                // Attendre la nouvelle réponse du serveur
-                responseFromServer = inClient.readUTF();
-                System.out.println("Réponse du serveur : " + responseFromServer);
+				outClient.writeUTF(username);
+				outClient.writeUTF(password);
 
-                // Vérifier à nouveau si les informations d'identification sont valides
-                credentialsValid = responseFromServer.contains("Connexion réussie");
-            }
-        } catch (IOException e) {
-            // Gérer l'exception, par exemple, imprimer l'erreur
-            e.printStackTrace();
-        }
-    }
+				responseFromServer = inClient.readUTF();
+				System.out.println("Réponse du serveur : " + responseFromServer);
 
+				credentialsValid = responseFromServer.contains(Serveur.ANSI_GREEN);
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 
 
 
 
-    public static void connectToServer() throws UnknownHostException, IOException {
-        Scanner scanner = new Scanner(System.in);
 
-        try {
-            // Créez le socket avant d'essayer d'envoyer des données
-            socket = new Socket(serverIP, serverPort);
-            System.out.format("Connecté au serveur sur [%s : %d] %n", serverIP, serverPort);
+	public static void connectToServer() throws UnknownHostException, IOException {
+		Scanner scanner = new Scanner(System.in);
+		try {
+			socket = new Socket(serverIP, serverPort);
+			System.out.format("Connecté au serveur sur [%s%s%s : %d] %n", Serveur.ANSI_BLUE, serverIP, Serveur.ANSI_WHITE, serverPort);
 
-            DataOutputStream outClient = new DataOutputStream(socket.getOutputStream());
-            DataInputStream inClient = new DataInputStream(socket.getInputStream());
+			DataOutputStream outClient = new DataOutputStream(socket.getOutputStream());
+			DataInputStream inClient = new DataInputStream(socket.getInputStream());
 
-            // Utilisez la boucle while pour continuer tant que le nom d'utilisateur existe
-            // Lecture du nom d'utilisateur et du mot de passe du client
-            System.out.println("Entrez votre nom d'utilisateur : ");
-            username = scanner.nextLine();
-            System.out.println();
+			askingForUsernameAndPassword(inClient, outClient,scanner);
 
-            while (true) {
-                System.out.println("Entrez votre mot de passe : ");
-                password = scanner.nextLine();
-                System.out.println();
+			while (!ClientHandler.DisconnectRequested()) {
+				sendMessageToServer(inClient, outClient, scanner);
+			}
 
-                outClient.writeUTF(username);
-                outClient.writeUTF(password);
 
-                String responseFromServer = inClient.readUTF();
-
-                // Vérifiez ici si la réponse indique que les informations d'identification sont valides
-                if (responseFromServer.contains("Connexion réussie") || responseFromServer.contains("Création du compte réussie")) {
-                    break;  // Sortez de la boucle si les informations d'identification sont valides
-                } else {
-                    System.out.println("Veuillez réessayer.\n");
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 
 
 
-    public static void sendMessageToServer() throws IOException {
-        try (
-            Scanner scanner = new Scanner(System.in);
-            DataOutputStream outClient = new DataOutputStream(socket.getOutputStream())
-        ) {
-            System.out.println("Saisissez votre réponse (200 caractères maximum) ou tapez 'exit' pour quitter : ");
+	public static void sendMessageToServer(DataInputStream inClient, DataOutputStream outClient, Scanner scanner) throws IOException {
+	    try {
+	        System.out.println("Saisissez votre réponse (200 caractères maximum) ou tapez 'exit' pour quitter : ");
 
-            if (scanner.hasNextLine()) {
-                String userResponse = scanner.nextLine();
-                outClient.writeUTF(userResponse);
-            }
-        }
-    }
+	        if (scanner.hasNextLine()) {
+	            String userResponse = scanner.nextLine();
+	            outClient.writeUTF(userResponse);
+
+	            String responseFromServer = inClient.readUTF();
+	            System.out.println("Réponse du serveur : " + responseFromServer);
+	        }
+	    } finally {}
+	}
 
 
 
-    
-    public static void main(String[] args) {
-        try {
-            serverIP = Serveur.askForIP();
-            serverPort = Serveur.askForPort();
-            connectToServer();
-            while (!ClientHandler.DisconnectRequested()) {
-                sendMessageToServer();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            if (socket != null && !socket.isClosed()) {
-                try {
-                    socket.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
+
+	public static void main(String[] args) {
+		try {
+			serverIP = Serveur.askForIP();
+			serverPort = Serveur.askForPort();
+			connectToServer();
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			if (socket != null && !socket.isClosed()) {
+				try {
+					socket.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}
 }

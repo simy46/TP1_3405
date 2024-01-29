@@ -26,6 +26,7 @@ public class Serveur {
     public static final String ANSI_WHITE = "\u001B[0m";
     public static final String ANSI_RED = "\u001B[31m";
     public static final String ANSI_GREEN = "\u001B[32m";
+    public static final String ANSI_BLUE = "\u001B[38;5;189m";
 
     
     public static Map<String, String> getDatabase() {
@@ -68,7 +69,7 @@ public class Serveur {
             correctIpFormat = ipVerification(serverIP);
 
             if (!correctIpFormat) {
-                System.out.println("Format d'adresse IP incorrect, veuillez réessayer. \n");
+                System.out.println(ANSI_RED + "Format d'adresse IP incorrect, veuillez réessayer. \n" + ANSI_WHITE);
             }
 
         } while (!correctIpFormat);
@@ -89,11 +90,11 @@ public class Serveur {
                 correctPortFormat = verificationPort(serverPort);
 
                 if (!correctPortFormat) {
-                    System.out.println("Format de port incorrect, veuillez réessayer. \n");
+                    System.out.println(ANSI_RED + "Format de port incorrect, veuillez réessayer. \n" + ANSI_WHITE);
                 }
 
             } catch (NumberFormatException e) {
-                System.out.println("Format de port incorrect, veuillez entrer un nombre entier. \n");
+                System.out.println(ANSI_RED + "Format de port incorrect, veuillez entrer un nombre entier. \n" + ANSI_WHITE);
                 correctPortFormat = false;
             }
 
@@ -175,19 +176,19 @@ public class Serveur {
                     // Vérification des informations d'identification
                     if (usernameExist(userName)) {
                         if (validateUserCredentials(userName, password)) {
-                            String successMessage = ANSI_GREEN + "Connexion réussie pour l'utilisateur " + ANSI_WHITE + userName;
+                            String successMessage = ANSI_GREEN + "Connexion réussie pour l'utilisateur " + ANSI_BLUE + userName + ANSI_WHITE;
                             System.out.println(successMessage);
                             dataOutputStream.writeUTF(successMessage);
                             credentialsValid = true;
                         } else {
-                            String errorMessage = ANSI_RED + "Mot de passe incorrect pour l'utilisateur " + ANSI_WHITE + userName;
+                            String errorMessage = ANSI_RED + "Mot de passe incorrect pour l'utilisateur " + ANSI_BLUE + userName + ANSI_WHITE;
                             System.out.println(errorMessage);
                             dataOutputStream.writeUTF(errorMessage);
                         }
                     } else {
                         // L'utilisateur n'existe pas, création du compte
                         createUser(userName, password);
-                        String successMessage = ANSI_GREEN + "Création du compte réussie pour l'utilisateur " + ANSI_WHITE + userName;
+                        String successMessage = ANSI_GREEN + "Création du compte réussie pour l'utilisateur " + ANSI_BLUE + userName + ANSI_WHITE;
                         System.out.println(successMessage);
                         System.out.println();
                         dataOutputStream.writeUTF(successMessage);
@@ -208,7 +209,6 @@ public class Serveur {
 
     // Application Serveur
     public static void main(String[] args) throws Exception {
-
         loadUserDatabase("src/user.txt");
         serverAddress = askForIP();
         serverPort = askForPort();

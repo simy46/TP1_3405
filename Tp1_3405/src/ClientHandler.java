@@ -17,10 +17,18 @@ public class ClientHandler extends Thread {
 	public static void setDisconnectRequested(boolean isDisconnectRequested) {
 		ClientHandler.DisconnectRequested = isDisconnectRequested;
 	}
+	
+	public int getClientNumber() {
+		return clientNumber;
+	}
+
+	public void setClientNumber(int clientNumber) {
+		this.clientNumber = clientNumber;
+	}
 
     public ClientHandler(Socket socket, int clientNumber, String username) {
         this.socket = socket;
-        this.clientNumber = clientNumber;
+        this.setClientNumber(clientNumber);
         this.username = username;
 
         System.out.println(String.format("Nouvelle connexion avec %s (%d) sur %s", username, clientNumber, socket));
@@ -39,17 +47,32 @@ public class ClientHandler extends Thread {
     }
     
     private void processClientMessage(String message, DataOutputStream out) {
-        System.out.println("Message reçu de " + username + ": " + message);
+        if (isValidMessage(message)) {
+            System.out.println("Message reçu de " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE + ": " + message);
 
-        // Exemple de réponse au client
-        String response = "Message reçu avec succès.";
-        try {
-            out.writeUTF(response);
-        } catch (IOException e) {
-            // Gérez l'exception en fonction de votre logique
-            e.printStackTrace();
+            String response;
+            if ("exit".equals(message)) {
+                // Mettez à jour l'état de la déconnexion côté serveur
+                setDisconnectRequested(true);
+                setClientNumber(getClientNumber() - 1);
+                closeSocket();
+                response = "Déconnexion demandée. Fermeture du serveur.";
+            } else {
+                response = "Message reçu avec succès.";
+            }
+
+            // Écrire la réponse sur le flux de sortie
+            try {
+                out.writeUTF(response);
+            } catch (IOException e) {
+                System.out.println("Erreur lors de l'écriture de la réponse au client " + username);
+                e.printStackTrace();
+            }
+        } else {
+            System.out.println(Serveur.ANSI_RED + "Veuillez respecter le nombre de caractère %s" + Serveur.ANSI_WHITE);
         }
     }
+
 
     public void run() {
         try (
@@ -57,37 +80,28 @@ public class ClientHandler extends Thread {
             DataOutputStream out = new DataOutputStream(socket.getOutputStream())
         ) {
             // Informer le client de la connexion réussie
-            out.writeUTF("Connexion réussie. Bienvenue, " + username + "!");
+            out.writeUTF("Connexion réussie. Bienvenue, " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE + "!");
 
             while (!DisconnectRequested()) {
                 String clientMessage = in.readUTF();
-
-                // Traitez le message ici selon vos besoins
-                System.out.println("Message reçu de " + username + ": " + clientMessage);
-
-                // Vérifiez si le message est "exit"
-                if (isValidMessage(clientMessage)) {
-                    // Traitez le message ici selon vos besoins
-                    processClientMessage(clientMessage, out);
-                } else {
-                    // En cas de message invalide, vous pouvez choisir d'envoyer un message d'erreur au client, ignorer, etc.
-                    System.out.println("Message invalide reçu de " + username);
-                }
-
-                // Exemple de réponse au client
+                processClientMessage(clientMessage, out);
                 String response = "Message reçu avec succès.";
-                out.writeUTF(response);
+
+                // Vérifie si la déconnexion a été demandée avant d'écrire la réponse
+                if (!DisconnectRequested()) {
+                    out.writeUTF(response);
+                }
             }
         } catch (IOException e) {
-            // Gérer l'exception (par exemple, déconnexion du client)
             System.out.println("Le client " + username + " s'est déconnecté.");
-        } finally {
-            // Fermez le socket ici si nécessaire
-            closeSocket();
-            System.out.println(String.format("Connexion avec %s (%d) fermée", new String(username), clientNumber));
+
+            // Fermeture du socket côté serveur après la déconnexion du client
+            try {
+                socket.close();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
         }
     }
-
-	
 
 }
