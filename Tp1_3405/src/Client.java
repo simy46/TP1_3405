@@ -33,8 +33,6 @@ public class Client {
 
 
 			while (!credentialsValid) {
-				System.out.println(Serveur.ANSI_RED + "Mot de passe incorrect.\n" + Serveur.ANSI_WHITE);
-
 				System.out.println("Entrez votre mot de passe : ");
 				password = scanner.nextLine();
 
@@ -42,7 +40,7 @@ public class Client {
 				outClient.writeUTF(password);
 
 				responseFromServer = inClient.readUTF();
-				System.out.println("Réponse du serveur : " + responseFromServer);
+				System.out.println("Réponse du serveur : " + responseFromServer); System.out.println();
 
 				credentialsValid = responseFromServer.contains(Serveur.ANSI_GREEN);
 			}
@@ -51,15 +49,11 @@ public class Client {
 		}
 	}
 
-
-
-
-
 	public static void connectToServer() throws UnknownHostException, IOException {
 		Scanner scanner = new Scanner(System.in);
 		try {
 			socket = new Socket(serverIP, serverPort);
-			System.out.format("Connecté au serveur sur [%s%s%s : %d] %n", Serveur.ANSI_BLUE, serverIP, Serveur.ANSI_WHITE, serverPort);
+			System.out.format("Connecté au serveur sur [%s%s%s : %s%d%s] %n", Serveur.ANSI_BLUE, serverIP, Serveur.ANSI_WHITE, Serveur.ANSI_BLUE, serverPort, Serveur.ANSI_WHITE);
 
 			DataOutputStream outClient = new DataOutputStream(socket.getOutputStream());
 			DataInputStream inClient = new DataInputStream(socket.getInputStream());
@@ -77,7 +71,6 @@ public class Client {
 	}
 
 
-
 	public static void sendMessageToServer(DataInputStream inClient, DataOutputStream outClient, Scanner scanner) throws IOException {
 	    try {
 	        System.out.println("Saisissez votre réponse (200 caractères maximum) ou tapez 'exit' pour quitter : ");
@@ -87,13 +80,11 @@ public class Client {
 	            outClient.writeUTF(userResponse);
 
 	            String responseFromServer = inClient.readUTF();
-	            System.out.println("Réponse du serveur : " + responseFromServer);
+	            System.out.println("Réponse du serveur : " + Serveur.ANSI_GREEN + responseFromServer + Serveur.ANSI_WHITE);
+	            System.out.println();
 	        }
 	    } finally {}
 	}
-
-
-
 
 	public static void main(String[] args) {
 		try {

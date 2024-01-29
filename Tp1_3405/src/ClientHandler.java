@@ -52,18 +52,18 @@ public class ClientHandler extends Thread {
 
             String response;
             if ("exit".equals(message)) {
-                // Mettez à jour l'état de la déconnexion côté serveur
                 setDisconnectRequested(true);
                 setClientNumber(getClientNumber() - 1);
-                closeSocket();
                 response = "Déconnexion demandée. Fermeture du serveur.";
             } else {
-                response = "Message reçu avec succès.";
+                response = "Message délivré.";
             }
 
-            // Écrire la réponse sur le flux de sortie
             try {
                 out.writeUTF(response);
+                if ("exit".equals(message)) {
+                    closeSocket();
+                }
             } catch (IOException e) {
                 System.out.println("Erreur lors de l'écriture de la réponse au client " + username);
                 e.printStackTrace();

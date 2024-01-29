@@ -33,6 +33,10 @@ public class Serveur {
         return database;
     }
     
+    private static void skipLine() {
+    	System.out.println();
+    }
+    
     
     public static boolean verificationPort(int port) {
         return port >= 5000 && port <= 5050;
@@ -69,6 +73,7 @@ public class Serveur {
             correctIpFormat = ipVerification(serverIP);
 
             if (!correctIpFormat) {
+            	skipLine();
                 System.out.println(ANSI_RED + "Format d'adresse IP incorrect, veuillez réessayer. \n" + ANSI_WHITE);
             }
 
@@ -90,10 +95,12 @@ public class Serveur {
                 correctPortFormat = verificationPort(serverPort);
 
                 if (!correctPortFormat) {
+                	skipLine();
                     System.out.println(ANSI_RED + "Format de port incorrect, veuillez réessayer. \n" + ANSI_WHITE);
                 }
 
             } catch (NumberFormatException e) {
+            	skipLine();
                 System.out.println(ANSI_RED + "Format de port incorrect, veuillez entrer un nombre entier. \n" + ANSI_WHITE);
                 correctPortFormat = false;
             }
@@ -119,8 +126,6 @@ public class Serveur {
         }
     }
     
-    
-
     public static boolean usernameExist(String username) {
         return database.containsKey(username);
     }
@@ -155,7 +160,8 @@ public class Serveur {
 
         // Association de l'adresse et du port à la connexion
         Listener.bind(new InetSocketAddress(serverIP, serverPort));
-        System.out.format(ANSI_GREEN + "Le serveur fonctionne sur %s%s : %d %n", ANSI_WHITE, serverAddress, serverPort);
+        System.out.format(ANSI_GREEN + "Le serveur fonctionne sur %s%s%s : %s%d%s %n", ANSI_BLUE, serverAddress, ANSI_WHITE, ANSI_BLUE, serverPort, ANSI_WHITE);
+        skipLine();
 
         try {
             while (true) {
@@ -178,11 +184,13 @@ public class Serveur {
                         if (validateUserCredentials(userName, password)) {
                             String successMessage = ANSI_GREEN + "Connexion réussie pour l'utilisateur " + ANSI_BLUE + userName + ANSI_WHITE;
                             System.out.println(successMessage);
+                            skipLine();
                             dataOutputStream.writeUTF(successMessage);
                             credentialsValid = true;
                         } else {
                             String errorMessage = ANSI_RED + "Mot de passe incorrect pour l'utilisateur " + ANSI_BLUE + userName + ANSI_WHITE;
                             System.out.println(errorMessage);
+                            skipLine();
                             dataOutputStream.writeUTF(errorMessage);
                         }
                     } else {
@@ -190,6 +198,7 @@ public class Serveur {
                         createUser(userName, password);
                         String successMessage = ANSI_GREEN + "Création du compte réussie pour l'utilisateur " + ANSI_BLUE + userName + ANSI_WHITE;
                         System.out.println(successMessage);
+                        skipLine();
                         System.out.println();
                         dataOutputStream.writeUTF(successMessage);
                         credentialsValid = true;
@@ -199,7 +208,6 @@ public class Serveur {
                 new ClientHandler(clientSocket, clientNumber++, userName).start();
             }
         } finally {
-            // Ne fermez le Listener que lorsque vous êtes prêt à fermer le serveur
             Listener.close();
         }
 
