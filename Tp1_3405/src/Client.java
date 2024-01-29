@@ -80,7 +80,8 @@ public class Client {
 	            outClient.writeUTF(userResponse);
 
 	            String responseFromServer = inClient.readUTF();
-	            System.out.println("Réponse du serveur : " + Serveur.ANSI_GREEN + responseFromServer + Serveur.ANSI_WHITE);
+	            String autrerep = inClient.readUTF();
+	            System.out.println("Réponse du serveur : " + Serveur.ANSI_GREEN + responseFromServer + autrerep + Serveur.ANSI_WHITE);
 	            System.out.println();
 	        }
 	    } finally {}

@@ -86,11 +86,8 @@ public class ClientHandler extends Thread {
                 String clientMessage = in.readUTF();
                 processClientMessage(clientMessage, out);
                 String response = "Message reçu avec succès.";
-
-                // Vérifie si la déconnexion a été demandée avant d'écrire la réponse
-                if (!DisconnectRequested()) {
-                    out.writeUTF(response);
-                }
+                out.writeUTF(response);
+                
             }
         } catch (IOException e) {
             System.out.println("Le client " + username + " s'est déconnecté.");
