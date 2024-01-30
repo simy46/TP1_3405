@@ -63,6 +63,8 @@ public class Client {
 			while (!ClientHandler.DisconnectRequested()) {
 				sendMessageToServer(inClient, outClient, scanner);
 			}
+			outClient.writeUTF("Déconnexion du client " + username);
+			socket.close();
 
 
 		} catch (IOException e) {
@@ -79,13 +81,20 @@ public class Client {
 	            String userResponse = scanner.nextLine();
 	            outClient.writeUTF(userResponse);
 
-	            String responseFromServer = inClient.readUTF();
-	            String autrerep = inClient.readUTF();
-	            System.out.println("Réponse du serveur : " + Serveur.ANSI_GREEN + responseFromServer + autrerep + Serveur.ANSI_WHITE);
-	            System.out.println();
+	            if ("exit".equals(userResponse)) {
+	                // Mettez à jour l'état de la déconnexion côté client
+	                ClientHandler.setDisconnectRequested(true);
+	            } else {
+	                // Lire la réponse du serveur seulement si ce n'est pas une demande de déconnexion
+	                String responseFromServer = inClient.readUTF();
+	                System.out.println("Réponse du serveur : " + responseFromServer);
+	            }
 	        }
-	    } finally {}
+	    } catch (IOException e) {
+	        e.printStackTrace();
+	    }
 	}
+
 
 	public static void main(String[] args) {
 		try {
@@ -95,14 +104,6 @@ public class Client {
 
 		} catch (Exception e) {
 			e.printStackTrace();
-		} finally {
-			if (socket != null && !socket.isClosed()) {
-				try {
-					socket.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-		}
+		} 
 	}
 }
