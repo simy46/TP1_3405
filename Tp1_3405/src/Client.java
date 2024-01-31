@@ -59,13 +59,11 @@ public class Client {
 			DataInputStream inClient = new DataInputStream(socket.getInputStream());
 
 			askingForUsernameAndPassword(inClient, outClient,scanner);
-
 			while (!ClientHandler.DisconnectRequested()) {
 				sendMessageToServer(inClient, outClient, scanner);
 			}
-			outClient.writeUTF("Déconnexion du client " + username);
+			outClient.writeUTF("Déconnexion du client " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE);
 			socket.close();
-
 
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -80,16 +78,14 @@ public class Client {
 	        if (scanner.hasNextLine()) {
 	            String userResponse = scanner.nextLine();
 	            outClient.writeUTF(userResponse);
-
-	            if ("exit".equals(userResponse)) {
-	                // Mettez à jour l'état de la déconnexion côté client
-	                ClientHandler.setDisconnectRequested(true);
-	            } else {
-	                // Lire la réponse du serveur seulement si ce n'est pas une demande de déconnexion
-	                String responseFromServer = inClient.readUTF();
-	                System.out.println("Réponse du serveur : " + responseFromServer);
-	            }
+	            String responseFromServer = inClient.readUTF();
+	            System.out.println("Réponse du serveur : " + responseFromServer);
+	            if (responseFromServer.contains(Serveur.ANSI_GRAY)) {
+	            	ClientHandler.setDisconnectRequested(true);
+		        	return;
+		        }
 	        }
+	        
 	    } catch (IOException e) {
 	        e.printStackTrace();
 	    }

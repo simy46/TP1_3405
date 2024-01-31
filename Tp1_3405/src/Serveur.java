@@ -21,10 +21,23 @@ public class Serveur {
 	private static ServerSocket Listener;
 	private static String serverAddress;
 	private static int serverPort;
+	private static int clientNumber = 0;
+
+	
 	public static final String ANSI_WHITE = "\u001B[0m";
 	public static final String ANSI_RED = "\u001B[31m";
 	public static final String ANSI_GREEN = "\u001B[32m";
 	public static final String ANSI_BLUE = "\u001B[38;5;189m";
+	public static final String ANSI_GRAY = "\u001B[90m";
+
+	
+	public static int getClientNumber() {
+        return clientNumber;
+    }
+
+    public static void setClientNumber(int number) {
+        clientNumber = number;
+    }
 	
 	public static ServerSocket getServerSocket() {
 		return Listener;
@@ -104,8 +117,6 @@ public class Serveur {
 
 
 	public static void connectClient() throws IOException {
-		int clientNumber = 0;
-
 		// Création de la connexion pour communiquer avec les clients
 		Listener = new ServerSocket();
 		Listener.setReuseAddress(true);
@@ -118,6 +129,9 @@ public class Serveur {
 		try {
 			while (true) {
 				new ClientHandler(Listener.accept(), clientNumber++).start();
+				if(clientNumber == 0) {
+					break;
+				}
 			}
 		} finally {
 			Listener.close();

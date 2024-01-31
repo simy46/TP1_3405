@@ -108,19 +108,19 @@ public class ClientHandler extends Thread {
 	            System.out.println("Message reçu de " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE + ": " + message);
 
 	            if ("exit".equals(message)) {
+	                Serveur.setClientNumber(Serveur.getClientNumber() - 1);
+	                response = Serveur.ANSI_GRAY + "Déconnexion demandée. Fermeture du serveur." + Serveur.ANSI_WHITE;
 	                setDisconnectRequested(true);
-	                setClientNumber(getClientNumber() - 1);
-	                response = "Déconnexion demandée. Fermeture du serveur.";
-	                closeSocket(); // Assurez-vous de fermer le socket ici
+	                out.writeUTF(response);
+	                return;
 	            } else {
-	                response = "Message délivré.";
+	                response = Serveur.ANSI_GREEN + "Message délivré." + Serveur.ANSI_WHITE;
 	            }
 
-	            // Écrire la réponse sur le flux de sortie
-	            out.writeUTF(response);
 	        } else {
-	            System.out.println(Serveur.ANSI_RED + "Veuillez respecter le nombre de caractère %s" + Serveur.ANSI_WHITE);
+	            response = Serveur.ANSI_RED + "Veuillez respecter le nombre de caractère %s" + Serveur.ANSI_WHITE;
 	        }
+            out.writeUTF(response);
 	    } catch (IOException e) {
 	        e.printStackTrace();
 	    }
@@ -148,11 +148,9 @@ public class ClientHandler extends Thread {
 					out.writeUTF(errorMessage);
 				}
 			} else {
-				// L'utilisateur n'existe pas, création du compte
 				createUser(username, password);
 				String successMessage = Serveur.ANSI_GREEN + "Création du compte réussie pour l'utilisateur " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE;
-				System.out.println(successMessage);
-				skipLine();
+				System.out.println(successMessage); skipLine();
 				out.writeUTF(successMessage);
 				credentialsValid = true;
 			}
@@ -175,8 +173,7 @@ public class ClientHandler extends Thread {
             System.out.println(in.readUTF());
             closeSocket();
         } catch (IOException e) {
-            System.out.println("Le client " + username + " s'est déconnecté.");
-
+            System.out.println("Le client " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE + " a quitté le groupe");
         }
     }
 
