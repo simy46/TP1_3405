@@ -8,7 +8,7 @@ public class ClientHandler extends Thread {
     private int clientNumber;
     private String username;
     private String password;
-	private static boolean disconnectRequested = false;
+	private static boolean isConnected = true;
 
 	private static Map<String, String> database = new HashMap<>();
 
@@ -23,18 +23,12 @@ public class ClientHandler extends Thread {
 		return database;
 	}
 
-	private static void skipLine() {
-		System.out.println();
-	}
-    
-    
-
-	public static boolean isDisconnectRequested() {
-	    return disconnectRequested;
+	public static boolean isConnected() {
+	    return isConnected;
 	}
 
-	public static void setDisconnectRequested(boolean disconnect) {
-	    disconnectRequested = disconnect;
+	public static void setConnectedState(boolean disconnect) {
+	    isConnected = disconnect;
 	}
 	
 	public int getClientNumber() {
@@ -102,36 +96,30 @@ public class ClientHandler extends Thread {
         database.put(username.toLowerCase(), password);
         writeToUserFile("src/user.txt", username, password);
     }
-
-	
     
     private void processClientMessage(String message, DataOutputStream out) {
         try {
             if (isValidMessage(message)) {
-                System.out.println("Message reçu de " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE + ": " + message);
-
                 if ("exit".equalsIgnoreCase(message.trim())) {
                     Serveur.setClientNumber(Serveur.getClientNumber() - 1);
                     String response = Serveur.ANSI_GRAY + "Déconnexion réussie." + Serveur.ANSI_WHITE + Serveur.time;
-                    setDisconnectRequested(true);
+                    setConnectedState(false);
+                    System.out.println(Serveur.ANSI_GRAY + "L'utilisateur " + Serveur.ANSI_BLUE + username + Serveur.ANSI_GRAY + " s'est déconnecté à " + Serveur.ANSI_WHITE + Serveur.time);
                     out.writeUTF(response);
                     return;
                 } else {
-                    String response = Serveur.ANSI_GREEN + "Message reçu : " + message + Serveur.ANSI_WHITE + Serveur.time;
+                    System.out.println(String.format("[%s - %s:%d - %s]: %s", Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE, socket.getInetAddress().getHostAddress(), socket.getPort(), Serveur.time, message));
+                    String response = Serveur.ANSI_GREEN + "Message délivré " + Serveur.time  + Serveur.ANSI_WHITE;
                     out.writeUTF(response);
                 }
             } else {
-                String response = Serveur.ANSI_RED + "Veuillez respecter le nombre de caractère %s" + Serveur.ANSI_WHITE;
+                String response = Serveur.ANSI_RED + "Veuillez respecter le nombre de caractère" + Serveur.ANSI_WHITE;
                 out.writeUTF(response);
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
-
-
-
-
     
     private void connectClient(DataInputStream in, DataOutputStream out) throws IOException {
         boolean credentialsValid = false;
@@ -168,7 +156,7 @@ public class ClientHandler extends Thread {
             loadUserDatabase("src/user.txt");
             connectClient(in, out);
             
-            while (!isDisconnectRequested()) {
+            while (isConnected()) {
                 String clientMessage = in.readUTF();
                 processClientMessage(clientMessage, out);                
             }

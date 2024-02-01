@@ -31,7 +31,7 @@ public class Client {
 	        outClient.writeUTF(password);
 
 	        String responseFromServer = inClient.readUTF();
-	        System.out.println("Réponse du serveur : " + responseFromServer);
+	        System.out.println(responseFromServer);
 
 	        boolean credentialsValid = responseFromServer.contains(Serveur.ANSI_GREEN);
 
@@ -43,7 +43,7 @@ public class Client {
 	            outClient.writeUTF(password);
 
 	            responseFromServer = inClient.readUTF();
-	            System.out.println("Réponse du serveur : " + responseFromServer);
+	            System.out.println(responseFromServer);
 
 	            credentialsValid = responseFromServer.contains(Serveur.ANSI_GREEN);
 	        }
@@ -69,10 +69,10 @@ public class Client {
 	        DataInputStream inClient = new DataInputStream(socket.getInputStream());
 
 	        askingForUsernameAndPassword(inClient, outClient, scanner);
-	        while (!ClientHandler.isDisconnectRequested()) {
+	        while (ClientHandler.isConnected()) {
 	            sendMessageToServer(inClient, outClient, scanner);
 	        }
-	        outClient.writeUTF("Déconnexion du client " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE);
+	        outClient.writeUTF(Serveur.ANSI_GRAY + "Déconnexion du client " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE);
 	        
 	    } catch (UnknownHostException e) {
 	        System.out.println("Impossible de se connecter au serveur : adresse IP non trouvée.");
@@ -97,16 +97,19 @@ public class Client {
 	        if (scanner.hasNextLine()) {
 	            String userResponse = scanner.nextLine();
 
-	            outClient.writeUTF(userResponse + Serveur.time);
+	            outClient.writeUTF(userResponse);
 	            String responseFromServer = inClient.readUTF();
 	            System.out.println("Réponse du serveur : " + responseFromServer);
 	            if (responseFromServer.contains(Serveur.ANSI_GRAY)) {
+	            	ClientHandler.setConnectedState(false);
 	                return;
 	            }
 	        }
 	        
 	    } catch (IOException e) {
+	    	ClientHandler.setConnectedState(false);
 	        System.out.println("Erreur lors de la communication avec le serveur : " + e.getMessage());
+            return;
 	    }
 	}
 

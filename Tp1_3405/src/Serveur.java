@@ -26,9 +26,10 @@ public class Serveur {
 
 	private static String getCurrentTimeFormatted() {
 	    LocalDateTime now = LocalDateTime.now();
-	    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("' ['HH:mm']'");
+	    DateTimeFormatter formatter = DateTimeFormatter.ofPattern(" '('dd-MM-yyyy')@'HH:mm:ss");
 	    return now.format(formatter);
 	}
+
 
 	
 	public static int getClientNumber() {
@@ -112,19 +113,35 @@ public class Serveur {
 
 		return serverPort;
 	}
-
 	
+	private static void displayServer(String serverAddress, int serverPort) {
+	    int boxWidth = 70;
 
+	    String message = String.format("%sLe serveur fonctionne sur %s%s%s : %s%d%s",
+	            Serveur.ANSI_GREEN,
+	            Serveur.ANSI_BLUE, serverAddress, Serveur.ANSI_WHITE,
+	            Serveur.ANSI_BLUE, serverPort, Serveur.ANSI_WHITE);
+
+
+	    String border = "+" + "-".repeat(boxWidth - 2) + "+";
+
+	    int paddingLength = boxWidth - message.replaceAll("\u001B\\[[;\\d]*m", "").length() - 4;
+	    String padding = " ".repeat(Math.max(0, paddingLength));
+
+	    System.out.println(border);
+	    System.out.printf("| %s%s |\n", message, padding);
+	    System.out.println(border);
+	}
 
 	public static void connectClient() throws IOException {
-		// Création de la connexion pour communiquer avec les clients
 		Listener = new ServerSocket();
 		Listener.setReuseAddress(true);
 		InetAddress serverIP = InetAddress.getByName(serverAddress);
 
-		// Association de l'adresse et du port à la connexion
 		Listener.bind(new InetSocketAddress(serverIP, serverPort));
-		System.out.format(ANSI_GREEN + "Le serveur fonctionne sur %s%s%s : %s%d%s" + time, ANSI_BLUE, serverAddress, ANSI_WHITE, ANSI_BLUE, serverPort, ANSI_WHITE);
+		
+		displayServer(serverAddress, serverPort);
+		
 		try {
 			while (true) {
 				new ClientHandler(Listener.accept(), clientNumber++).start();
