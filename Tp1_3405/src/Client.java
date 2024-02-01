@@ -1,11 +1,15 @@
-import java.util.Scanner;
+import java.util.*;
+import java.io.*;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.UnknownHostException;
+
+
 
 public class Client {
 	private static Socket socket;
@@ -13,83 +17,99 @@ public class Client {
 	private static String password;
 	private static String serverIP;
 	private static int serverPort;
+	
 
+	public static void askingForUsernameAndPassword(DataInputStream inClient, DataOutputStream outClient, Scanner scanner) {
+	    try {
+	        System.out.println("Entrez votre nom d'utilisateur : ");
+	        username = scanner.nextLine();
 
-	public static void askingForUsernameAndPassword(DataInputStream inClient, DataOutputStream outClient,Scanner scanner) {
-		try {
-			System.out.println("Entrez votre nom d'utilisateur : ");
-			username = scanner.nextLine();
+	        System.out.println("Entrez votre mot de passe : ");
+	        password = scanner.nextLine();
 
-			System.out.println("Entrez votre mot de passe : ");
-			password = scanner.nextLine();
+	        outClient.writeUTF(username);
+	        outClient.writeUTF(password);
 
-			outClient.writeUTF(username);
-			outClient.writeUTF(password);
+	        String responseFromServer = inClient.readUTF();
+	        System.out.println("Réponse du serveur : " + responseFromServer);
 
-			String responseFromServer = inClient.readUTF();
-			System.out.println("Réponse du serveur : " + responseFromServer);
+	        boolean credentialsValid = responseFromServer.contains(Serveur.ANSI_GREEN);
 
-			boolean credentialsValid = responseFromServer.contains(Serveur.ANSI_GREEN);
+	        while (!credentialsValid) {
+	            System.out.println("Entrez votre mot de passe : ");
+	            password = scanner.nextLine();
 
+	            outClient.writeUTF(username);
+	            outClient.writeUTF(password);
 
-			while (!credentialsValid) {
-				System.out.println("Entrez votre mot de passe : ");
-				password = scanner.nextLine();
+	            responseFromServer = inClient.readUTF();
+	            System.out.println("Réponse du serveur : " + responseFromServer);
 
-				outClient.writeUTF(username);
-				outClient.writeUTF(password);
-
-				responseFromServer = inClient.readUTF();
-				System.out.println("Réponse du serveur : " + responseFromServer); System.out.println();
-
-				credentialsValid = responseFromServer.contains(Serveur.ANSI_GREEN);
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
-	public static void connectToServer() throws UnknownHostException, IOException {
-		Scanner scanner = new Scanner(System.in);
-		try {
-			socket = new Socket(serverIP, serverPort);
-			System.out.format("Connecté au serveur sur [%s%s%s : %s%d%s] %n", Serveur.ANSI_BLUE, serverIP, Serveur.ANSI_WHITE, Serveur.ANSI_BLUE, serverPort, Serveur.ANSI_WHITE);
-
-			DataOutputStream outClient = new DataOutputStream(socket.getOutputStream());
-			DataInputStream inClient = new DataInputStream(socket.getInputStream());
-
-			askingForUsernameAndPassword(inClient, outClient,scanner);
-			while (!ClientHandler.DisconnectRequested()) {
-				sendMessageToServer(inClient, outClient, scanner);
-			}
-			outClient.writeUTF("Déconnexion du client " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE);
-			socket.close();
-
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+	            credentialsValid = responseFromServer.contains(Serveur.ANSI_GREEN);
+	        }
+	    } catch (EOFException e) {
+	        System.out.println("Connexion interrompue : le serveur a fermé la connexion de manière inattendue.");
+	    } catch (SocketException e) {
+	        System.out.println("Erreur de socket : impossible de communiquer avec le serveur.");
+	    } catch (IOException e) {
+	        System.out.println("Erreur d'E/S : " + e.getMessage());
+	    } catch (NoSuchElementException e) {
+	        System.out.println("Flux d'entrée interrompu. Impossible de lire les données utilisateur.");
+	    }
 	}
 
 
-	public static void sendMessageToServer(DataInputStream inClient, DataOutputStream outClient, Scanner scanner) throws IOException {
+	public static void connectToServer() {
+	    Scanner scanner = new Scanner(System.in);
+	    try {
+	        socket = new Socket(serverIP, serverPort);
+	        System.out.format("Connecté au serveur sur [%s%s%s : %s%d%s] %n", Serveur.ANSI_BLUE, serverIP, Serveur.ANSI_WHITE, Serveur.ANSI_BLUE, serverPort, Serveur.ANSI_WHITE);
+
+	        DataOutputStream outClient = new DataOutputStream(socket.getOutputStream());
+	        DataInputStream inClient = new DataInputStream(socket.getInputStream());
+
+	        askingForUsernameAndPassword(inClient, outClient, scanner);
+	        while (!ClientHandler.isDisconnectRequested()) {
+	            sendMessageToServer(inClient, outClient, scanner);
+	        }
+	        outClient.writeUTF("Déconnexion du client " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE);
+	        
+	    } catch (UnknownHostException e) {
+	        System.out.println("Impossible de se connecter au serveur : adresse IP non trouvée.");
+	    } catch (IOException e) {
+	        System.out.println("Erreur lors de la connexion au serveur : " + e.getMessage());
+	    } finally {
+	        try {
+	            if (socket != null && !socket.isClosed()) {
+	                socket.close();
+	            }
+	        } catch (IOException e) {
+	            System.out.println("Erreur lors de la fermeture du socket : " + e.getMessage());
+	        }
+	    }
+	}
+
+
+	public static void sendMessageToServer(DataInputStream inClient, DataOutputStream outClient, Scanner scanner) {
 	    try {
 	        System.out.println("Saisissez votre réponse (200 caractères maximum) ou tapez 'exit' pour quitter : ");
 
 	        if (scanner.hasNextLine()) {
 	            String userResponse = scanner.nextLine();
-	            outClient.writeUTF(userResponse);
+
+	            outClient.writeUTF(userResponse + Serveur.time);
 	            String responseFromServer = inClient.readUTF();
 	            System.out.println("Réponse du serveur : " + responseFromServer);
 	            if (responseFromServer.contains(Serveur.ANSI_GRAY)) {
-	            	ClientHandler.setDisconnectRequested(true);
-		        	return;
-		        }
+	                return;
+	            }
 	        }
 	        
 	    } catch (IOException e) {
-	        e.printStackTrace();
+	        System.out.println("Erreur lors de la communication avec le serveur : " + e.getMessage());
 	    }
 	}
+
 
 
 	public static void main(String[] args) {

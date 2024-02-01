@@ -1,11 +1,5 @@
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.net.Socket;
+import java.io.*;
+import java.net.*;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -14,13 +8,15 @@ public class ClientHandler extends Thread {
     private int clientNumber;
     private String username;
     private String password;
+	private static boolean disconnectRequested = false;
+
 	private static Map<String, String> database = new HashMap<>();
 
 	public ClientHandler(Socket socket, int clientNumber) {
         this.socket = socket;
         this.setClientNumber(clientNumber);
         
-        System.out.println(String.format("Nouvelle connexion : client #(%d) sur %s", clientNumber, socket));
+        System.out.println(String.format("Nouvelle connexion : client #(%d) sur %s" + Serveur.time, clientNumber, socket));
     }
 
 	public static Map<String, String> getDatabase() {
@@ -31,14 +27,14 @@ public class ClientHandler extends Thread {
 		System.out.println();
 	}
     
-    private static volatile boolean DisconnectRequested = false;
     
-    public static boolean DisconnectRequested() {
-		return DisconnectRequested;
+
+	public static boolean isDisconnectRequested() {
+	    return disconnectRequested;
 	}
 
-	public static void setDisconnectRequested(boolean isDisconnectRequested) {
-		ClientHandler.DisconnectRequested = isDisconnectRequested;
+	public static void setDisconnectRequested(boolean disconnect) {
+	    disconnectRequested = disconnect;
 	}
 	
 	public int getClientNumber() {
@@ -49,113 +45,119 @@ public class ClientHandler extends Thread {
 		this.clientNumber = clientNumber;
 	}
     
-    private void closeSocket() {
-        try {
-            socket.close();
-        } catch (IOException e) {
-            System.out.println("Impossible de fermer le socket, que se passe-t-il ?");
-        }
-    }
-    
+	private void closeSocket() {
+	    try {
+	        if (socket != null && !socket.isClosed()) {
+	            socket.close();
+	        }
+	    } catch (IOException e) {
+	        System.out.println("Erreur lors de la fermeture du socket : " + e.getMessage());
+	    }
+	}
     private boolean isValidMessage(String message) {
         return message != null && message.length() <= 200;
     }
     
     public static void loadUserDatabase(String filePath) {
-		try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
-			String line;
-			while ((line = reader.readLine()) != null) {
-				String[] parts = line.split(",");
-				if (parts.length == 2) {
-					String username = parts[0].trim();
-					String password = parts[1].trim();
-					database.put(username, password);
-				}
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(",");
+                if (parts.length == 2) {
+                    String username = parts[0].trim();
+                    String password = parts[1].trim();
+                    database.put(username, password);
+                } else {
+                    System.out.println("Format de ligne non valide dans le fichier : " + line);
+                }
+            }
+        } catch (FileNotFoundException e) {
+            System.out.println("Le fichier spécifié n'a pas été trouvé : " + filePath);
+        } catch (IOException e) {
+            System.out.println("Erreur de lecture du fichier : " + filePath);
+        }
+    }
+
     
     private static void writeToUserFile(String filePath, String username, String password) {
-		try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath, true))) {
-			writer.write(username + "," + password);
-			writer.newLine();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath, true))) {
+            writer.write(username.toLowerCase() + "," + password);
+            writer.newLine();
+        } catch (IOException e) {
+            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
+        }
+    }
 
-	public static boolean usernameExist(String username) {
-		return database.containsKey(username);
-	}
 
-	private static boolean validateUserCredentials(String receivedUsername, String receivedPassword) {
-		String storedPassword = database.get(receivedUsername);
-		return storedPassword != null && storedPassword.equals(receivedPassword);
-	}
+    public static boolean usernameExist(String username) {
+        return database.containsKey(username.toLowerCase());
+    }
 
-	private static void createUser(String username, String password) {
-		database.put(username, password);
-		writeToUserFile("src/user.txt", username, password);
-	}
+    private static boolean validateUserCredentials(String receivedUsername, String receivedPassword) {
+        String storedPassword = database.get(receivedUsername.toLowerCase());
+        return storedPassword != null && storedPassword.equals(receivedPassword);
+    }
+
+    private static void createUser(String username, String password) {
+        database.put(username.toLowerCase(), password);
+        writeToUserFile("src/user.txt", username, password);
+    }
+
 	
     
-	private void processClientMessage(String message, DataOutputStream out) {
-	    String response = null;
-	    try {
-	        if (isValidMessage(message)) {
-	            System.out.println("Message reçu de " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE + ": " + message);
+    private void processClientMessage(String message, DataOutputStream out) {
+        try {
+            if (isValidMessage(message)) {
+                System.out.println("Message reçu de " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE + ": " + message);
 
-	            if ("exit".equals(message)) {
-	                Serveur.setClientNumber(Serveur.getClientNumber() - 1);
-	                response = Serveur.ANSI_GRAY + "Déconnexion demandée. Fermeture du serveur." + Serveur.ANSI_WHITE;
-	                setDisconnectRequested(true);
-	                out.writeUTF(response);
-	                return;
-	            } else {
-	                response = Serveur.ANSI_GREEN + "Message délivré." + Serveur.ANSI_WHITE;
-	            }
+                if ("exit".equalsIgnoreCase(message.trim())) {
+                    Serveur.setClientNumber(Serveur.getClientNumber() - 1);
+                    String response = Serveur.ANSI_GRAY + "Déconnexion réussie." + Serveur.ANSI_WHITE + Serveur.time;
+                    setDisconnectRequested(true);
+                    out.writeUTF(response);
+                    return;
+                } else {
+                    String response = Serveur.ANSI_GREEN + "Message reçu : " + message + Serveur.ANSI_WHITE + Serveur.time;
+                    out.writeUTF(response);
+                }
+            } else {
+                String response = Serveur.ANSI_RED + "Veuillez respecter le nombre de caractère %s" + Serveur.ANSI_WHITE;
+                out.writeUTF(response);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
-	        } else {
-	            response = Serveur.ANSI_RED + "Veuillez respecter le nombre de caractère %s" + Serveur.ANSI_WHITE;
-	        }
-            out.writeUTF(response);
-	    } catch (IOException e) {
-	        e.printStackTrace();
-	    }
-	}
+
 
 
     
     private void connectClient(DataInputStream in, DataOutputStream out) throws IOException {
-		boolean credentialsValid = false;
-		while (!credentialsValid) {
-			username = in.readUTF();
-			password = in.readUTF();
+        boolean credentialsValid = false;
 
-			if (usernameExist(username)) {
-				if (validateUserCredentials(username, password)) {
-					String successMessage = Serveur.ANSI_GREEN + "Connexion réussie pour l'utilisateur " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE;
-					System.out.println(successMessage);
-					skipLine();
-					out.writeUTF(successMessage);
-					credentialsValid = true;
-				} else {
-					String errorMessage = Serveur.ANSI_RED + "Mot de passe incorrect pour l'utilisateur " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE;
-					System.out.println(errorMessage);
-					skipLine();
-					out.writeUTF(errorMessage);
-				}
-			} else {
-				createUser(username, password);
-				String successMessage = Serveur.ANSI_GREEN + "Création du compte réussie pour l'utilisateur " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE;
-				System.out.println(successMessage); skipLine();
-				out.writeUTF(successMessage);
-				credentialsValid = true;
-			}
-		}
+        while (!credentialsValid) {
+            username = in.readUTF();
+            password = in.readUTF();
+
+            if (usernameExist(username)) {
+                if (validateUserCredentials(username, password)) {
+                    String successMessage = Serveur.ANSI_GREEN + "Connexion réussie pour l'utilisateur " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE + Serveur.time;
+                    out.writeUTF(successMessage);
+                    credentialsValid = true;
+                } else {
+                    String errorMessage = Serveur.ANSI_RED + "Mot de passe incorrect pour l'utilisateur " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE + Serveur.time;
+                    out.writeUTF(errorMessage);
+                }
+            } else {
+                createUser(username, password);
+                String successMessage = Serveur.ANSI_GREEN + "Création du compte réussie pour l'utilisateur " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE + Serveur.time;
+                out.writeUTF(successMessage);
+                credentialsValid = true;
+            }
+        }
     }
+
 
 
     public void run() {
@@ -163,18 +165,23 @@ public class ClientHandler extends Thread {
             DataInputStream in = new DataInputStream(socket.getInputStream());
             DataOutputStream out = new DataOutputStream(socket.getOutputStream())
         ) {
-    		loadUserDatabase("src/user.txt");
-    		connectClient(in ,out);
-			
-            while (!DisconnectRequested()) {
+            loadUserDatabase("src/user.txt");
+            connectClient(in, out);
+            
+            while (!isDisconnectRequested()) {
                 String clientMessage = in.readUTF();
                 processClientMessage(clientMessage, out);                
             }
-            System.out.println(in.readUTF());
-            closeSocket();
+        } catch (SocketException e) {
+            System.out.println("Connexion interrompue avec le client " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE + Serveur.time);
+        } catch (EOFException e) {
+            System.out.println("Fin de flux atteinte pour le client " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE + Serveur.time);
         } catch (IOException e) {
-            System.out.println("Le client " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE + " a quitté le groupe");
+            System.out.println("Erreur I/O avec le client " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE + Serveur.time + ": " + e.getMessage());
+        } finally {
+            closeSocket();
         }
     }
+
 
 }
