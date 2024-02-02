@@ -99,7 +99,7 @@ public class Client {
 
 	            outClient.writeUTF(userResponse);
 	            String responseFromServer = inClient.readUTF();
-	            System.out.println("Réponse du serveur : " + responseFromServer);
+	            System.out.println(responseFromServer);
 	            if (responseFromServer.contains(Serveur.ANSI_GRAY)) {
 	            	ClientHandler.setConnectedState(false);
 	                return;
