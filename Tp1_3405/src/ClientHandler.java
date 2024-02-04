@@ -134,7 +134,7 @@ public class ClientHandler extends Thread {
                 if (validateUserCredentials(username, password)) {
                     String successMessage = Serveur.ANSI_GREEN + "Connexion réussie pour l'utilisateur " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE + Serveur.time;
                     out.writeUTF(successMessage);
-                    for (String message : serveur.getMessages()) {
+                    for (String message : serveur.getMessages()) { //ecriture des 15 derniers messages, pris d<un static data memeber de la classe par un GETTER
                         out.writeUTF(message);
                     }
                     credentialsValid = true;
@@ -163,6 +163,7 @@ public class ClientHandler extends Thread {
             
             while (isConnected()) {
                 String clientMessage = in.readUTF();
+                serveur.addMessageQueue(clientMessage); //appel de la fonction proteger de la classe serveur pour ajouter le message  dans la QUEUE
                 processClientMessage(clientMessage, out);                
             }
         } catch (SocketException e) {
