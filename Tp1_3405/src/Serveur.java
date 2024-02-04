@@ -2,9 +2,9 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.io.IOException;
-
+import java.util.LinkedList;
 import java.util.Scanner;
-
+import java.util.Vector;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -15,7 +15,8 @@ public class Serveur {
 	private static String serverAddress;
 	private static int serverPort;
 	private static int clientNumber = 0;
-	
+	private static Vector<ClientHandler> listClientHandler;
+	private static LinkedList<String> messages = new LinkedList<>();
 	public static final String ANSI_WHITE = "\u001B[0m";
 	public static final String ANSI_RED = "\u001B[31m";
 	public static final String ANSI_GREEN = "\u001B[32m";
@@ -29,7 +30,7 @@ public class Serveur {
 	    DateTimeFormatter formatter = DateTimeFormatter.ofPattern(" '('dd-MM-yyyy')@'HH:mm:ss");
 	    return now.format(formatter);
 	}
-
+	
 
 	
 	public static int getClientNumber() {
@@ -132,8 +133,16 @@ public class Serveur {
 	    System.out.printf("| %s%s |\n", message, padding);
 	    System.out.println(border);
 	}
+	
+	protected void removeClientFromVector(int clientNumber) {
+		for (ClientHandler x : listClientHandler) {
+			if(x.getClientNumber()== clientNumber) {
+				listClientHandler.remove(x);
+			}
+		}
+	}
 
-	public static void connectClient() throws IOException {
+	public void connectClient() throws IOException { //enlever le status static de la fonction
 		Listener = new ServerSocket();
 		Listener.setReuseAddress(true);
 		InetAddress serverIP = InetAddress.getByName(serverAddress);
@@ -144,8 +153,9 @@ public class Serveur {
 		
 		try {
 			while (true) {
-				new ClientHandler(Listener.accept(), clientNumber++).start();
-				if(clientNumber == 0) {
+				listClientHandler.add(new ClientHandler(Listener.accept(),this, clientNumber++)); //stockage du client handler dans le vecteur data member de la classe
+				listClientHandler.lastElement().start();
+				if(clientNumber == 0) { //possibilite de comparer avec le size du vecteur.
 					break;
 				}
 			}
@@ -154,11 +164,21 @@ public class Serveur {
 		}
 
 	}
-
+	
+	protected void addMessageQueue(String newMessage) {
+		if (messages.size() == 15) {
+		    messages.removeFirst(); // Supprime le message le plus ancien
+		}
+		messages.addLast(newMessage);
+	}
+	
+	protected LinkedList<String> getMessages() {
+		return messages;
+	}
 
 
 	// Application Serveur
-	public static void main(String[] args) throws Exception {
+	public void main(String[] args) throws Exception { //enlever l,attribut statique de la fonction.
 		serverAddress = askForIP();
 		serverPort = askForPort();
 		connectClient();   

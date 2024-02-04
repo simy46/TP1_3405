@@ -8,12 +8,14 @@ public class ClientHandler extends Thread {
     private int clientNumber;
     private String username;
     private String password;
+    private Serveur serveur; // possede une reference a la classe serveur auquel il appartient pour appeler de ses methodes
 	private static boolean isConnected = true;
 
 	private static Map<String, String> database = new HashMap<>();
 
-	public ClientHandler(Socket socket, int clientNumber) {
-        this.socket = socket;
+	public ClientHandler(Socket socket,Serveur serveur, int clientNumber) {
+		this.serveur = serveur;
+		this.socket = socket;
         this.setClientNumber(clientNumber);
         
         System.out.println(String.format("Nouvelle connexion : client #(%d) sur %s" + Serveur.time, clientNumber, socket));
@@ -132,6 +134,9 @@ public class ClientHandler extends Thread {
                 if (validateUserCredentials(username, password)) {
                     String successMessage = Serveur.ANSI_GREEN + "Connexion réussie pour l'utilisateur " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE + Serveur.time;
                     out.writeUTF(successMessage);
+                    for (String message : serveur.getMessages()) {
+                        out.writeUTF(message);
+                    }
                     credentialsValid = true;
                 } else {
                     String errorMessage = Serveur.ANSI_RED + "Mot de passe incorrect pour l'utilisateur " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE + Serveur.time;
@@ -161,6 +166,7 @@ public class ClientHandler extends Thread {
                 processClientMessage(clientMessage, out);                
             }
         } catch (SocketException e) {
+        	serveur.removeClientFromVector(clientNumber);
             System.out.println("Connexion interrompue avec le client " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE + Serveur.time);
         } catch (EOFException e) {
             System.out.println("Fin de flux atteinte pour le client " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE + Serveur.time);
