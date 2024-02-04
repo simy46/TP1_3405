@@ -13,7 +13,7 @@ public class ClientHandler extends Thread {
 
 	private static Map<String, String> database = new HashMap<>();
 
-	public ClientHandler(Socket socket,Serveur serveur, int clientNumber) {
+	public ClientHandler(Socket socket, Serveur serveur, int clientNumber) {
 		this.serveur = serveur;
 		this.socket = socket;
         this.setClientNumber(clientNumber);
@@ -106,7 +106,7 @@ public class ClientHandler extends Thread {
                     Serveur.setClientNumber(Serveur.getClientNumber() - 1);
                     String response = Serveur.ANSI_GRAY + "Déconnexion réussie." + Serveur.ANSI_WHITE + Serveur.time;
                     setConnectedState(false);
-                    System.out.println(Serveur.ANSI_GRAY + "L'utilisateur " + Serveur.ANSI_BLUE + username + Serveur.ANSI_GRAY + " s'est déconnecté à " + Serveur.ANSI_WHITE + Serveur.time);
+                    System.out.println(Serveur.ANSI_BLUE + username + Serveur.ANSI_GRAY + " s'est déconnecté à " + Serveur.ANSI_WHITE + Serveur.time);
                     out.writeUTF(response);
                     return;
                 } else {

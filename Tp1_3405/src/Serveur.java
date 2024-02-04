@@ -12,10 +12,10 @@ import java.time.format.DateTimeFormatter;
 public class Serveur {
 
 	private static ServerSocket Listener;
-	private static String serverAddress;
-	private static int serverPort;
+	private String serverAddress;
+	private int serverPort;
 	private static int clientNumber = 0;
-	private static Vector<ClientHandler> listClientHandler;
+	private static Vector<ClientHandler> listClientHandler = new Vector<ClientHandler>();
 	private static LinkedList<String> messages = new LinkedList<>();
 	public static final String ANSI_WHITE = "\u001B[0m";
 	public static final String ANSI_RED = "\u001B[31m";
@@ -142,27 +142,26 @@ public class Serveur {
 		}
 	}
 
-	public void connectClient() throws IOException { //enlever le status static de la fonction
-		Listener = new ServerSocket();
-		Listener.setReuseAddress(true);
-		InetAddress serverIP = InetAddress.getByName(serverAddress);
+	public void connectClient() throws IOException {
+	    ServerSocket Listener = new ServerSocket();
+	    Listener.setReuseAddress(true);
+	    InetAddress serverIP = InetAddress.getByName(serverAddress);
 
-		Listener.bind(new InetSocketAddress(serverIP, serverPort));
-		
-		displayServer(serverAddress, serverPort);
-		
-		try {
-			while (true) {
-				listClientHandler.add(new ClientHandler(Listener.accept(),this, clientNumber++)); //stockage du client handler dans le vecteur data member de la classe
-				listClientHandler.lastElement().start();
-				if(clientNumber == 0) { //possibilite de comparer avec le size du vecteur.
-					break;
-				}
-			}
-		} finally {
-			Listener.close();
-		}
-
+	    Listener.bind(new InetSocketAddress(serverIP, serverPort));
+	    
+	    displayServer(serverAddress, serverPort);
+	    
+	    try {
+	        while (true) {
+	            listClientHandler.add(new ClientHandler(Listener.accept(), this, clientNumber++));
+	            listClientHandler.lastElement().start();
+	            if(clientNumber == 0) {
+	                break;
+	            }
+	        }
+	    } finally {
+	        Listener.close();
+	    }
 	}
 	
 	protected void addMessageQueue(String newMessage) {
@@ -178,9 +177,14 @@ public class Serveur {
 
 
 	// Application Serveur
-	public void main(String[] args) throws Exception { //enlever l,attribut statique de la fonction.
-		serverAddress = askForIP();
-		serverPort = askForPort();
-		connectClient();   
+	public static void main(String[] args) throws Exception { 
+		try {
+			Serveur serveur = new Serveur();
+			serveur.serverAddress = askForIP();
+			serveur.serverPort = askForPort();
+			serveur.connectClient();
+		} catch (IOException e) {
+            e.printStackTrace();
+        }
 	}
 }
