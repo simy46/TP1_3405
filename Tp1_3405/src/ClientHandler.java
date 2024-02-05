@@ -142,7 +142,7 @@ public class ClientHandler extends Thread {
                 if (validateUserCredentials(username, password)) {
                     String successMessage = Serveur.ANSI_GREEN + "Connexion réussie pour l'utilisateur " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE + Serveur.time;
                     for (String message : Serveur.getMessages()) { //ecriture des 15 derniers messages, pris d<un static data memeber de la classe par un GETTER
-                        successMessage += message + "\n";
+                    	successMessage += "\n" + message;
                     }
                     out.writeUTF(successMessage);
                     credentialsValid = true;
@@ -153,7 +153,10 @@ public class ClientHandler extends Thread {
             } else {
                 createUser(username, password);
                 String successMessage = Serveur.ANSI_GREEN + "Création du compte réussie pour l'utilisateur " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE + Serveur.time;
-                out.writeUTF(successMessage);
+                for (String message : Serveur.getMessages()) { //ecriture des 15 derniers messages, pris d<un static data memeber de la classe par un GETTER
+                	successMessage += message + "\n";
+                }
+                out.writeUTF(successMessage);                
                 credentialsValid = true;
             }
         }
