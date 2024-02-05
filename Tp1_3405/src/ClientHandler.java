@@ -8,6 +8,7 @@ public class ClientHandler extends Thread {
     private int clientNumber;
     private String username;
     private String password;
+    private DataOutputStream output;
     private Serveur serveur; // possede une reference a la classe serveur auquel il appartient pour appeler de ses methodes
 	private static boolean isConnected = true;
 
@@ -17,7 +18,12 @@ public class ClientHandler extends Thread {
 		this.serveur = serveur;
 		this.socket = socket;
         this.setClientNumber(clientNumber);
-        
+        try {
+			output = new DataOutputStream(socket.getOutputStream());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
         System.out.println(String.format("Nouvelle connexion : client #(%d) sur %s" + Serveur.time, clientNumber, socket));
     }
 
@@ -107,7 +113,7 @@ public class ClientHandler extends Thread {
         writeToUserFile("src/user.txt", username, password);
     }
     
-    private void processClientMessage(String message, DataOutputStream out) {
+    private void processClientMessage(String message) {
         try {
             if (isValidMessage(message)) {
                 if ("exit".equalsIgnoreCase(message.trim())) {
@@ -115,23 +121,27 @@ public class ClientHandler extends Thread {
                     String response = Serveur.ANSI_GRAY + "Déconnexion réussie." + Serveur.ANSI_WHITE + Serveur.time;
                     setConnectedState(false);
                     System.out.println(Serveur.ANSI_BLUE + username + Serveur.ANSI_GRAY + " s'est déconnecté à " + Serveur.ANSI_WHITE + Serveur.time);
-                    out.writeUTF(response);
+                    output.writeUTF(response);
                     return;
                 } else {
-                    System.out.println(String.format("[%s - %s:%d - %s]: %s", Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE, socket.getInetAddress().getHostAddress(), socket.getPort(), Serveur.time, message));
+                	String formattedMessage = String.format("[%s - %s:%d - %s]: %s", Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE, socket.getInetAddress().getHostAddress(), socket.getPort(), Serveur.time, message);
+                    System.out.println(formattedMessage);
+                    serveur.addMessageQueue(formattedMessage); //appel de la fonction proteger de la classe serveur pour ajouter le message  dans la QUEUE
+                    writeToMessageFile(formattedMessage);
+                    serveur.writeToEveryClient(clientNumber ,formattedMessage);
                     String response = Serveur.ANSI_GREEN + "Message délivré " + Serveur.time  + Serveur.ANSI_WHITE;
-                    out.writeUTF(response);
+                    output.writeUTF(response);
                 }
             } else {
                 String response = Serveur.ANSI_RED + "Veuillez respecter le nombre de caractère" + Serveur.ANSI_WHITE;
-                out.writeUTF(response);
+                output.writeUTF(response);
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
     
-    private void connectClient(DataInputStream in, DataOutputStream out) throws IOException {
+    private void connectClient(DataInputStream in) throws IOException {
         boolean credentialsValid = false;
 
         while (!credentialsValid) {
@@ -144,11 +154,11 @@ public class ClientHandler extends Thread {
                     for (String message : Serveur.getMessages()) { //ecriture des 15 derniers messages, pris d<un static data memeber de la classe par un GETTER
                     	successMessage += "\n" + message;
                     }
-                    out.writeUTF(successMessage);
+                    output.writeUTF(successMessage);
                     credentialsValid = true;
                 } else {
                     String errorMessage = Serveur.ANSI_RED + "Mot de passe incorrect pour l'utilisateur " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE + Serveur.time;
-                    out.writeUTF(errorMessage);
+                    output.writeUTF(errorMessage);
                 }
             } else {
                 createUser(username, password);
@@ -156,27 +166,27 @@ public class ClientHandler extends Thread {
                 for (String message : Serveur.getMessages()) { //ecriture des 15 derniers messages, pris d<un static data memeber de la classe par un GETTER
                 	successMessage += message + "\n";
                 }
-                out.writeUTF(successMessage);                
+                output.writeUTF(successMessage);                
                 credentialsValid = true;
             }
         }
     }
 
-
+    public DataOutputStream getDataOutputStream() {
+    	return output;
+    }
 
     public void run() {
         try (
             DataInputStream in = new DataInputStream(socket.getInputStream());
-            DataOutputStream out = new DataOutputStream(socket.getOutputStream())
+        	//DataOutputStream out = new DataOutputStream(socket.getOutputStream());
         ) {
             loadUserDatabase("src/user.txt");
-            connectClient(in, out);
+            connectClient(in);
             
             while (isConnected()) {
                 String clientMessage = in.readUTF();
-                serveur.addMessageQueue(clientMessage); //appel de la fonction proteger de la classe serveur pour ajouter le message  dans la QUEUE
-                writeToMessageFile(clientMessage);
-                processClientMessage(clientMessage, out);                
+                processClientMessage(clientMessage);                
             }
         } catch (SocketException e) {
         	serveur.removeClientFromVector(clientNumber);

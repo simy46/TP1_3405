@@ -176,6 +176,14 @@ public class Serveur {
 	public static LinkedList<String> getMessages() { //getters pour la Queue.
 		return new LinkedList<String>(messages);
 	}
+	
+	public static void writeToEveryClient(int clientNumber ,String userInput) throws IOException {
+		for (ClientHandler x : listClientHandler) {
+			if (x.getClientNumber() != clientNumber) {
+				x.getDataOutputStream().writeUTF(userInput);
+			}
+		}
+	}
 
 
 	// Application Serveur

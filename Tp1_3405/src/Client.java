@@ -12,6 +12,7 @@ import java.net.UnknownHostException;
 
 
 public class Client {
+	private static MessageHandler messageHandler;
 	private static Socket socket;
 	private static String username;
 	private static String password;
@@ -68,9 +69,10 @@ public class Client {
 	        DataOutputStream outClient = new DataOutputStream(socket.getOutputStream());
 	        DataInputStream inClient = new DataInputStream(socket.getInputStream());
 	        askingForUsernameAndPassword(inClient, outClient, scanner);
+	        messageHandler = new MessageHandler(socket, inClient);
+	        messageHandler.start();
 	        //if (ClientHandler.isConnected()) System.out.println(inClient.readUTF());
 	        while (ClientHandler.isConnected()) {
-	        	
 	            sendMessageToServer(inClient, outClient, scanner);
 	        }
 	        outClient.writeUTF(Serveur.ANSI_GRAY + "Déconnexion du client " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE);
@@ -99,11 +101,11 @@ public class Client {
 	            String userResponse = scanner.nextLine();
 
 	            outClient.writeUTF(userResponse);
-	            String responseFromServer = inClient.readUTF();
+	            String responseFromServer = messageHandler.takeMessage();
 	            System.out.println(responseFromServer);
-	            for (String message : Serveur.getMessages()) { //ecriture des 15 derniers messages, pris d<un static data memeber de la classe par un GETTER
-	            	System.out.println(inClient.readUTF());
-                }
+	            //for (String message : Serveur.getMessages()) { //ecriture des 15 derniers messages, pris d<un static data memeber de la classe par un GETTER
+	            //	System.out.println(inClient.readUTF());
+                //}
 	            if (responseFromServer.contains(Serveur.ANSI_GRAY)) {
 	            	ClientHandler.setConnectedState(false);
 	                return;
@@ -114,7 +116,10 @@ public class Client {
 	    	ClientHandler.setConnectedState(false);
 	        System.out.println("Erreur lors de la communication avec le serveur : " + e.getMessage());
             return;
-	    }
+	    } catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 
