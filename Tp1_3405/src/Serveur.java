@@ -15,17 +15,14 @@ public class Serveur {
 	private String serverAddress;
 	private int serverPort;
 	private static int clientNumber = 0;
-<<<<<<< HEAD
-	private static Vector<ClientHandler> listClientHandler= new Vector<>();
-=======
 	private static Vector<ClientHandler> listClientHandler = new Vector<ClientHandler>();
->>>>>>> c281d1de26c15aa0b257a8f5fccd2021b5c2b093
 	private static LinkedList<String> messages = new LinkedList<>();
 	public static final String ANSI_WHITE = "\u001B[0m";
 	public static final String ANSI_RED = "\u001B[31m";
 	public static final String ANSI_GREEN = "\u001B[32m";
 	public static final String ANSI_BLUE = "\u001B[38;5;189m";
 	public static final String ANSI_GRAY = "\u001B[90m";
+	
 	
 	public static String time = getCurrentTimeFormatted();
 
@@ -169,6 +166,7 @@ public class Serveur {
 	}
 	
 	protected void addMessageQueue(String newMessage) { //fonction protected, utlise par clientHandler pour ecrire le message du client dans la QUEUE
+	    
 		if (messages.size() == 15) {
 		    messages.removeFirst(); // Supprime le message le plus ancien
 		}
@@ -176,7 +174,7 @@ public class Serveur {
 	}
 	
 	protected LinkedList<String> getMessages() { //getters pour la Queue.
-		return messages;
+		return new LinkedList<String>(messages);
 	}
 
 

@@ -83,6 +83,14 @@ public class ClientHandler extends Thread {
             System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
         }
     }
+    private static void writeToMessageFile(String newMessage) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter("src/messages.txt", true))) {
+            writer.write(newMessage);
+            writer.newLine();
+        } catch (IOException e) {
+            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
+        }
+    }
 
 
     public static boolean usernameExist(String username) {
@@ -164,6 +172,7 @@ public class ClientHandler extends Thread {
             while (isConnected()) {
                 String clientMessage = in.readUTF();
                 serveur.addMessageQueue(clientMessage); //appel de la fonction proteger de la classe serveur pour ajouter le message  dans la QUEUE
+                writeToMessageFile(clientMessage);
                 processClientMessage(clientMessage, out);                
             }
         } catch (SocketException e) {

@@ -67,9 +67,10 @@ public class Client {
 
 	        DataOutputStream outClient = new DataOutputStream(socket.getOutputStream());
 	        DataInputStream inClient = new DataInputStream(socket.getInputStream());
-
 	        askingForUsernameAndPassword(inClient, outClient, scanner);
+	        //if (ClientHandler.isConnected()) System.out.println(inClient.readUTF());
 	        while (ClientHandler.isConnected()) {
+	        	
 	            sendMessageToServer(inClient, outClient, scanner);
 	        }
 	        outClient.writeUTF(Serveur.ANSI_GRAY + "Déconnexion du client " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE);
