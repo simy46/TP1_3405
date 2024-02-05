@@ -173,7 +173,7 @@ public class Serveur {
 		messages.addLast(newMessage);
 	}
 	
-	protected LinkedList<String> getMessages() { //getters pour la Queue.
+	public static LinkedList<String> getMessages() { //getters pour la Queue.
 		return new LinkedList<String>(messages);
 	}
 

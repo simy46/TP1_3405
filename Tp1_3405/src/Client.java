@@ -99,6 +99,9 @@ public class Client {
 	            String userResponse = scanner.nextLine();
 
 	            outClient.writeUTF(userResponse);
+	            for (String message : Serveur.getMessages()) { //ecriture des 15 derniers messages, pris d<un static data memeber de la classe par un GETTER
+	            	outClient.writeUTF(message);
+                }
 	            String responseFromServer = inClient.readUTF();
 	            System.out.println(responseFromServer);
 	            if (responseFromServer.contains(Serveur.ANSI_GRAY)) {
