@@ -96,9 +96,10 @@ public class Client {
 	public static void sendMessageToServer(DataInputStream inClient, DataOutputStream outClient, Scanner scanner) {
 	    try {
 	        System.out.println("Saisissez votre réponse (200 caractères maximum) ou tapez 'exit' pour quitter : ");
-
+	        
 	        if (scanner.hasNextLine()) {
 	            String userResponse = scanner.nextLine();
+	            
 
 	            outClient.writeUTF(userResponse);
 	            String responseFromServer = messageHandler.takeMessage();

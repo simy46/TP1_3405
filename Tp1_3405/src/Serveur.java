@@ -178,6 +178,9 @@ public class Serveur {
 	}
 	
 	public static void writeToEveryClient(int clientNumber ,String userInput) throws IOException {
+		if (userInput == "exit") {
+			return;
+		}
 		for (ClientHandler x : listClientHandler) {
 			if (x.getClientNumber() != clientNumber) {
 				x.getDataOutputStream().writeUTF(userInput);

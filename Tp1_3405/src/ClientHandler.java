@@ -117,6 +117,7 @@ public class ClientHandler extends Thread {
         try {
             if (isValidMessage(message)) {
                 if ("exit".equalsIgnoreCase(message.trim())) {
+                	serveur.removeClientFromVector(clientNumber);
                     Serveur.setClientNumber(Serveur.getClientNumber() - 1);
                     String response = Serveur.ANSI_GRAY + "Déconnexion réussie." + Serveur.ANSI_WHITE + Serveur.time;
                     setConnectedState(false);
