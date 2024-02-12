@@ -4,7 +4,7 @@ import java.net.ServerSocket;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.Scanner;
-import java.util.Vector;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -15,8 +15,8 @@ public class Serveur {
 	private String serverAddress;
 	private int serverPort;
 	private static int clientNumber = 0;
-	private static Vector<ClientHandler> listClientHandler = new Vector<ClientHandler>();
-	private static LinkedList<String> messages = new LinkedList<>();
+    private CopyOnWriteArrayList<ClientHandler> listClientHandler = new CopyOnWriteArrayList<>();
+	private LinkedList<String> messages = new LinkedList<>();
 	public static final String ANSI_WHITE = "\u001B[0m";
 	public static final String ANSI_RED = "\u001B[31m";
 	public static final String ANSI_GREEN = "\u001B[32m";
@@ -154,11 +154,12 @@ public class Serveur {
 	    
 	    try {
 	        while (true) {
-	            listClientHandler.add(new ClientHandler(Listener.accept(), this, clientNumber++));
-	            listClientHandler.lastElement().start();
-	            if(clientNumber == 0) {
-	                break;
-	            }
+	        	  ClientHandler newClient = new ClientHandler(Listener.accept(), this, clientNumber++);
+	                listClientHandler.add(newClient);
+	                newClient.start();
+	                if (clientNumber == 0) {
+	                    break;
+	                }
 	        }
 	    } finally {
 	        Listener.close();
@@ -173,17 +174,16 @@ public class Serveur {
 		messages.addLast(newMessage);
 	}
 	
-	public static LinkedList<String> getMessages() { //getters pour la Queue.
+	public LinkedList<String> getMessages() { //getters pour la Queue.
 		return new LinkedList<String>(messages);
 	}
 	
-	public static void writeToEveryClient(int clientNumber ,String userInput) throws IOException {
-		if (userInput == "exit") {
-			return;
-		}
+	public void writeToEveryClient(int clientNumber ,String userInput) throws IOException {
 		for (ClientHandler x : listClientHandler) {
 			if (x.getClientNumber() != clientNumber) {
-				x.getDataOutputStream().writeUTF(userInput);
+				if (!x.socket.isClosed() && x.socket.isConnected()) {
+					x.getDataOutputStream().writeUTF(userInput);
+				}
 			}
 		}
 	}
@@ -197,6 +197,7 @@ public class Serveur {
 			serveur.serverPort = askForPort();
 			serveur.connectClient();
 		} catch (IOException e) {
+			System.out.println("Serveur : exception attrape");
             e.printStackTrace();
         }
 	}

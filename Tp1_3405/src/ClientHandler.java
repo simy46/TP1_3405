@@ -4,14 +4,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class ClientHandler extends Thread {
-    private Socket socket;
+    Socket socket;
     private int clientNumber;
     private String username;
     private String password;
     private DataOutputStream output;
     private Serveur serveur; // possede une reference a la classe serveur auquel il appartient pour appeler de ses methodes
-	private static boolean isConnected = true;
-
+	private boolean isConnected = true;
 	private static Map<String, String> database = new HashMap<>();
 
 	public ClientHandler(Socket socket, Serveur serveur, int clientNumber) {
@@ -31,11 +30,11 @@ public class ClientHandler extends Thread {
 		return database;
 	}
 
-	public static boolean isConnected() {
+	public boolean isConnected() {
 	    return isConnected;
 	}
 
-	public static void setConnectedState(boolean disconnect) {
+	public void setConnectedState(boolean disconnect) {
 	    isConnected = disconnect;
 	}
 	
@@ -53,7 +52,7 @@ public class ClientHandler extends Thread {
 	            socket.close();
 	        }
 	    } catch (IOException e) {
-	        System.out.println("Erreur lors de la fermeture du socket : " + e.getMessage());
+	        System.out.println("Erreur ClientHandler: Erreur lors de la fermeture du socket : " + e.getMessage());
 	    }
 	}
     private boolean isValidMessage(String message) {
@@ -70,13 +69,13 @@ public class ClientHandler extends Thread {
                     String password = parts[1].trim();
                     database.put(username, password);
                 } else {
-                    System.out.println("Format de ligne non valide dans le fichier : " + line);
+                    System.out.println("Erreur ClientHandler: Format de ligne non valide dans le fichier : " + line);
                 }
             }
         } catch (FileNotFoundException e) {
             System.out.println("Le fichier spécifié n'a pas été trouvé : " + filePath);
         } catch (IOException e) {
-            System.out.println("Erreur de lecture du fichier : " + filePath);
+            System.out.println("Erreur ClientHandler: Erreur de lecture du fichier : " + filePath);
         }
     }
 
@@ -86,7 +85,7 @@ public class ClientHandler extends Thread {
             writer.write(username.toLowerCase() + "," + password);
             writer.newLine();
         } catch (IOException e) {
-            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
+            System.out.println("Erreur ClientHandler: Erreur lors de l'écriture dans le fichier : " + e.getMessage());
         }
     }
     private static void writeToMessageFile(String newMessage) {
@@ -94,7 +93,7 @@ public class ClientHandler extends Thread {
             writer.write(newMessage);
             writer.newLine();
         } catch (IOException e) {
-            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
+            System.out.println("Erreur ClientHandler: Erreur lors de l'écriture dans le fichier : " + e.getMessage());
         }
     }
 
@@ -118,7 +117,6 @@ public class ClientHandler extends Thread {
             if (isValidMessage(message)) {
                 if ("exit".equalsIgnoreCase(message.trim())) {
                 	serveur.removeClientFromVector(clientNumber);
-                    Serveur.setClientNumber(Serveur.getClientNumber() - 1);
                     String response = Serveur.ANSI_GRAY + "Déconnexion réussie." + Serveur.ANSI_WHITE + Serveur.time;
                     setConnectedState(false);
                     System.out.println(Serveur.ANSI_BLUE + username + Serveur.ANSI_GRAY + " s'est déconnecté à " + Serveur.ANSI_WHITE + Serveur.time);
@@ -138,6 +136,7 @@ public class ClientHandler extends Thread {
                 output.writeUTF(response);
             }
         } catch (IOException e) {
+        	System.out.println("Exception ClientHandler: exception attrape dans ProcessClientMessage");
             e.printStackTrace();
         }
     }
@@ -152,7 +151,7 @@ public class ClientHandler extends Thread {
             if (usernameExist(username)) {
                 if (validateUserCredentials(username, password)) {
                     String successMessage = Serveur.ANSI_GREEN + "Connexion réussie pour l'utilisateur " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE + Serveur.time;
-                    for (String message : Serveur.getMessages()) { //ecriture des 15 derniers messages, pris d<un static data memeber de la classe par un GETTER
+                    for (String message : serveur.getMessages()) { //ecriture des 15 derniers messages, pris d<un static data memeber de la classe par un GETTER
                     	successMessage += "\n" + message;
                     }
                     output.writeUTF(successMessage);
@@ -164,7 +163,7 @@ public class ClientHandler extends Thread {
             } else {
                 createUser(username, password);
                 String successMessage = Serveur.ANSI_GREEN + "Création du compte réussie pour l'utilisateur " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE + Serveur.time;
-                for (String message : Serveur.getMessages()) { //ecriture des 15 derniers messages, pris d<un static data memeber de la classe par un GETTER
+                for (String message : serveur.getMessages()) { //ecriture des 15 derniers messages, pris d<un static data memeber de la classe par un GETTER
                 	successMessage += message + "\n";
                 }
                 output.writeUTF(successMessage);                
@@ -191,11 +190,11 @@ public class ClientHandler extends Thread {
             }
         } catch (SocketException e) {
         	serveur.removeClientFromVector(clientNumber);
-            System.out.println("Connexion interrompue avec le client " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE + Serveur.time);
+            System.out.println("Exception ClientHandler: Connexion interrompue avec le client " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE + Serveur.time);
         } catch (EOFException e) {
-            System.out.println("Fin de flux atteinte pour le client " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE + Serveur.time);
+            System.out.println("Exception ClientHandler: Fin de flux atteinte pour le client " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE + Serveur.time);
         } catch (IOException e) {
-            System.out.println("Erreur I/O avec le client " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE + Serveur.time + ": " + e.getMessage());
+            System.out.println("Exception ClientHandler: Erreur I/O avec le client " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE + Serveur.time + ": " + e.getMessage());
         } finally {
             closeSocket();
         }

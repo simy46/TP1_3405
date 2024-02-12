@@ -71,16 +71,16 @@ public class Client {
 	        askingForUsernameAndPassword(inClient, outClient, scanner);
 	        messageHandler = new MessageHandler(socket, inClient);
 	        messageHandler.start();
-	        //if (ClientHandler.isConnected()) System.out.println(inClient.readUTF());
-	        while (ClientHandler.isConnected()) {
+	        while (messageHandler.isConnected) {
 	            sendMessageToServer(inClient, outClient, scanner);
 	        }
 	        outClient.writeUTF(Serveur.ANSI_GRAY + "Déconnexion du client " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE);
+	        return;
 	        
 	    } catch (UnknownHostException e) {
 	        System.out.println("Impossible de se connecter au serveur : adresse IP non trouvée.");
 	    } catch (IOException e) {
-	        System.out.println("Erreur lors de la connexion au serveur : " + e.getMessage());
+	        System.out.println("Client: Erreur lors de la connexion au serveur : " + e.getMessage());
 	    } finally {
 	        try {
 	            if (socket != null && !socket.isClosed()) {
@@ -99,23 +99,18 @@ public class Client {
 	        
 	        if (scanner.hasNextLine()) {
 	            String userResponse = scanner.nextLine();
-	            
+	            if ("exit".equals(userResponse)) {
+	            	messageHandler.isConnected = false;
+	            }
 
 	            outClient.writeUTF(userResponse);
 	            String responseFromServer = messageHandler.takeMessage();
 	            System.out.println(responseFromServer);
-	            //for (String message : Serveur.getMessages()) { //ecriture des 15 derniers messages, pris d<un static data memeber de la classe par un GETTER
-	            //	System.out.println(inClient.readUTF());
-                //}
-	            if (responseFromServer.contains(Serveur.ANSI_GRAY)) {
-	            	ClientHandler.setConnectedState(false);
-	                return;
-	            }
+	            return; //
 	        }
 	        
 	    } catch (IOException e) {
-	    	ClientHandler.setConnectedState(false);
-	        System.out.println("Erreur lors de la communication avec le serveur : " + e.getMessage());
+	        System.out.println("Client: Erreur lors de la communication avec le serveur : " + e.getMessage());
             return;
 	    } catch (InterruptedException e) {
 			// TODO Auto-generated catch block
