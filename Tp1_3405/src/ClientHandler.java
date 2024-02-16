@@ -125,10 +125,10 @@ public class ClientHandler extends Thread {
                 } else {
                 	String formattedMessage = String.format("[%s - %s:%d - %s]: %s", Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE, socket.getInetAddress().getHostAddress(), socket.getPort(), Serveur.time, message);
                     System.out.println(formattedMessage);
-                    serveur.addMessageQueue(formattedMessage); //appel de la fonction proteger de la classe serveur pour ajouter le message  dans la QUEUE
+                    serveur.addMessageQueue(formattedMessage);
                     writeToMessageFile(formattedMessage);
                     serveur.writeToEveryClient(clientNumber ,formattedMessage);
-                    String response = Serveur.ANSI_GREEN + "Message délivré " + Serveur.time  + Serveur.ANSI_WHITE;
+                    String response = Serveur.ANSI_GREEN + "(Délivré " + Serveur.time  + Serveur.ANSI_WHITE + ")";
                     output.writeUTF(response);
                 }
             } else {
@@ -143,6 +143,7 @@ public class ClientHandler extends Thread {
     
     private void connectClient(DataInputStream in) throws IOException {
         boolean credentialsValid = false;
+        String rulesMessage = "\nIntéragissez avec " + Serveur.ANSI_GREEN + "respect" + Serveur.ANSI_WHITE + ", envoyez des messages " + Serveur.ANSI_BLUE +  "(200 caractères maximum) " + Serveur.ANSI_WHITE + "ou tapez " + Serveur.ANSI_RED + "'exit'" + Serveur.ANSI_WHITE + "pour quitter : ";
 
         while (!credentialsValid) {
             username = in.readUTF();
@@ -150,21 +151,21 @@ public class ClientHandler extends Thread {
 
             if (usernameExist(username)) {
                 if (validateUserCredentials(username, password)) {
-                    String successMessage = Serveur.ANSI_GREEN + "Connexion réussie pour l'utilisateur " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE + Serveur.time;
+                    String successMessage = Serveur.ANSI_GREEN + "Connexion réussie pour " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE + Serveur.time + rulesMessage;
                     for (String message : serveur.getMessages()) { //ecriture des 15 derniers messages, pris d<un static data memeber de la classe par un GETTER
                     	successMessage += "\n" + message;
                     }
                     output.writeUTF(successMessage);
                     credentialsValid = true;
                 } else {
-                    String errorMessage = Serveur.ANSI_RED + "Mot de passe incorrect pour l'utilisateur " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE + Serveur.time;
+                    String errorMessage = Serveur.ANSI_RED + "Mot de passe incorrect pour " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE + Serveur.time;
                     output.writeUTF(errorMessage);
                 }
             } else {
                 createUser(username, password);
-                String successMessage = Serveur.ANSI_GREEN + "Création du compte réussie pour l'utilisateur " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE + Serveur.time;
+                String successMessage = Serveur.ANSI_GREEN + "Création du compte réussie pour " + Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE + Serveur.time + rulesMessage;
                 for (String message : serveur.getMessages()) { //ecriture des 15 derniers messages, pris d<un static data memeber de la classe par un GETTER
-                	successMessage += message + "\n";
+                	successMessage += "\n" + message;
                 }
                 output.writeUTF(successMessage);                
                 credentialsValid = true;

@@ -65,6 +65,7 @@ public class Client {
 	    try {
 	        socket = new Socket(serverIP, serverPort);
 	        System.out.format("Connecté au serveur sur [%s%s%s : %s%d%s] %n", Serveur.ANSI_BLUE, serverIP, Serveur.ANSI_WHITE, Serveur.ANSI_BLUE, serverPort, Serveur.ANSI_WHITE);
+	        System.out.println();
 
 	        DataOutputStream outClient = new DataOutputStream(socket.getOutputStream());
 	        DataInputStream inClient = new DataInputStream(socket.getInputStream());
@@ -94,9 +95,7 @@ public class Client {
 
 
 	public static void sendMessageToServer(DataInputStream inClient, DataOutputStream outClient, Scanner scanner) {
-	    try {
-	        System.out.println("Saisissez votre réponse (200 caractères maximum) ou tapez 'exit' pour quitter : ");
-	        
+	    try {        
 	        if (scanner.hasNextLine()) {
 	            String userResponse = scanner.nextLine();
 	            if ("exit".equals(userResponse)) {
