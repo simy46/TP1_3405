@@ -189,7 +189,6 @@ public class Serveur {
 	}
 
 
-	// Application Serveur
 	public static void main(String[] args) throws Exception { 
 		try {
 			Serveur serveur = new Serveur();

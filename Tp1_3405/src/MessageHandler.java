@@ -15,7 +15,6 @@ public class MessageHandler extends Thread {
 	public MessageHandler(Socket socket, DataInputStream inClient) {
 		this.socket = socket;
 		this.inClient = inClient;
-		System.out.println("MessageHandler Setup Completed");
 	}
 
 	public void processMessages(String message) {
