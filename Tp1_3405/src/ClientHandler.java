@@ -25,7 +25,9 @@ public class ClientHandler extends Thread {
 		}
         System.out.println(String.format("Nouvelle connexion : client #(%d) sur %s" + Serveur.time, clientNumber, socket));
     }
-
+	public String getClientName() {
+		return username;
+	}
 	public static Map<String, String> getDatabase() {
 		return database;
 	}
@@ -127,7 +129,7 @@ public class ClientHandler extends Thread {
                     System.out.println(formattedMessage);
                     serveur.addMessageQueue(formattedMessage);
                     writeToMessageFile(formattedMessage);
-                    serveur.writeToEveryClient(clientNumber ,formattedMessage);
+                    serveur.writeToEveryClient(clientNumber, username ,formattedMessage);
                     String response = Serveur.ANSI_GREEN + "(Délivré " + Serveur.time  + Serveur.ANSI_WHITE + ")";
                     output.writeUTF(response);
                 }

@@ -22,6 +22,7 @@ public class Serveur {
 	public static final String ANSI_GREEN = "\u001B[32m";
 	public static final String ANSI_BLUE = "\u001B[38;5;189m";
 	public static final String ANSI_GRAY = "\u001B[90m";
+	private static Scanner scanner = new Scanner(System.in);
 	
 	
 	public static String time = getCurrentTimeFormatted();
@@ -73,7 +74,6 @@ public class Serveur {
 
 	public static String askForIP() {
 		boolean correctIpFormat;
-		Scanner scanner = new Scanner(System.in);
 		String serverIP;
 
 		do {
@@ -86,13 +86,11 @@ public class Serveur {
 			}
 
 		} while (!correctIpFormat);
-
 		return serverIP;
 	}
 
 	public static int askForPort() {
 		boolean correctPortFormat;
-		Scanner scanner = new Scanner(System.in);
 		int serverPort = 0;
 		do {
 			System.out.println("Entrez le port du serveur (entre 5000 et 5050) : ");
@@ -112,7 +110,6 @@ public class Serveur {
 			}
 
 		} while (!correctPortFormat);
-
 		return serverPort;
 	}
 	
@@ -166,30 +163,33 @@ public class Serveur {
 	    }
 	}
 	
-	protected void addMessageQueue(String newMessage) { //fonction protected, utlise par clientHandler pour ecrire le message du client dans la QUEUE
+	protected void addMessageQueue(String newMessage) { 
 	    
 		if (messages.size() == 15) {
-		    messages.removeFirst(); // Supprime le message le plus ancien
+		    messages.removeFirst(); 
 		}
 		messages.addLast(newMessage);
 	}
 	
-	public LinkedList<String> getMessages() { //getters pour la Queue.
+	public LinkedList<String> getMessages() { 
 		return new LinkedList<String>(messages);
 	}
 	
-	public void writeToEveryClient(int clientNumber ,String userInput) throws IOException {
-		for (ClientHandler x : listClientHandler) {
-			if (x.getClientNumber() != clientNumber) {
+	public void writeToEveryClient(int clientNumber, String clientName ,String userInput) throws IOException {
+		for (ClientHandler x : listClientHandler){
+			if ((x.getClientNumber() != clientNumber) && !(x.getClientName().equals(clientName))) {
 				if (!x.socket.isClosed() && x.socket.isConnected()) {
 					x.getDataOutputStream().writeUTF(userInput);
 				}
 			}
 		}
 	}
+	private static void closeScanner() {
+		scanner.close();
+	}
 
-
-	public static void main(String[] args) throws Exception { 
+	public static void main(String[] args) throws Exception {
+		
 		try {
 			Serveur serveur = new Serveur();
 			serveur.serverAddress = askForIP();
@@ -198,6 +198,9 @@ public class Serveur {
 		} catch (IOException e) {
 			System.out.println("Serveur : exception attrape");
             e.printStackTrace();
+        }
+		finally{
+			closeScanner();
         }
 	}
 }
