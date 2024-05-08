@@ -1,7 +1,10 @@
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.*;
 import java.util.HashMap;
 import java.util.Map;
+
+import javax.imageio.ImageIO;
 
 public class ClientHandler extends Thread {
     Socket socket;
@@ -114,7 +117,7 @@ public class ClientHandler extends Thread {
         writeToUserFile("src/user.txt", username, password);
     }
     
-    private void processClientMessage(String message) {
+    private void processClientMessage(String message, DataInputStream in) {
         try {
             if (isValidMessage(message)) {
                 if ("exit".equalsIgnoreCase(message.trim())) {
@@ -124,6 +127,9 @@ public class ClientHandler extends Thread {
                     System.out.println(Serveur.ANSI_BLUE + username + Serveur.ANSI_GRAY + " s'est déconnecté à " + Serveur.ANSI_WHITE + Serveur.time);
                     output.writeUTF(response);
                     return;
+                } else if("/image".equals(message.trim())) {                	
+                	receiveAndProcessImage(in);
+                	return;
                 } else {
                 	String formattedMessage = String.format("[%s - %s:%d - %s]: %s", Serveur.ANSI_BLUE + username + Serveur.ANSI_WHITE, socket.getInetAddress().getHostAddress(), socket.getPort(), Serveur.time, message);
                     System.out.println(formattedMessage);
@@ -143,9 +149,44 @@ public class ClientHandler extends Thread {
         }
     }
     
+    private void receiveAndProcessImage(DataInputStream input) {
+        try {
+            int length = input.readInt();  // Lire la taille de l'image
+            byte[] imageData = new byte[length];
+            input.readFully(imageData);  // Lire les données de l'image
+
+            // Conversion des données binaires en BufferedImage
+            BufferedImage image = ImageIO.read(new ByteArrayInputStream(imageData));
+            if (image == null) {
+                throw new IOException("Le fichier reçu n'est pas une image valide ou n'a pas pu être décodé.");
+            }
+
+            // Appliquer le filtre de Sobel
+            BufferedImage processedImage = Sobel.process(image);
+
+            // Logique pour gérer l'image après traitement
+            // Par exemple, sauvegarder ou renvoyer l'image, selon les besoins
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ImageIO.write(processedImage, "jpg", baos);
+            byte[] processedImageData = baos.toByteArray();
+
+            // Exemple d'envoi de l'image traitée en retour au client (si nécessaire)
+            output.writeUTF("/imageProcessed");
+            output.writeInt(processedImageData.length);
+            output.write(processedImageData);
+        } catch (IOException e) {
+            System.out.println("Erreur lors de la réception ou du traitement de l'image: " + e.getMessage());
+        }
+    }
+
+
+    
     private void connectClient(DataInputStream in) throws IOException {
         boolean credentialsValid = false;
-        String rulesMessage = "\nIntéragissez avec " + Serveur.ANSI_GREEN + "respect" + Serveur.ANSI_WHITE + ", envoyez des messages " + Serveur.ANSI_BLUE +  "(200 caractères maximum) " + Serveur.ANSI_WHITE + "ou tapez " + Serveur.ANSI_RED + "'exit'" + Serveur.ANSI_WHITE + "pour quitter : ";
+        String rulesMessage = "\nInteragissez avec " + Serveur.ANSI_GREEN + "respect" + Serveur.ANSI_WHITE
+                + ", envoyez des messages " + Serveur.ANSI_BLUE + "(200 caractères maximum) " + Serveur.ANSI_WHITE
+                + ", tapez " + Serveur.ANSI_RED + "'exit'" + Serveur.ANSI_WHITE
+                + " pour quitter ou tapez " + Serveur.ANSI_PURPLE + "'/image'" + Serveur.ANSI_WHITE + " pour formater une image : ";
 
         while (!credentialsValid) {
             username = in.readUTF();
@@ -189,7 +230,7 @@ public class ClientHandler extends Thread {
             
             while (isConnected()) {
                 String clientMessage = in.readUTF();
-                processClientMessage(clientMessage);                
+                processClientMessage(clientMessage, in);                
             }
         } catch (SocketException e) {
         	serveur.removeClientFromVector(clientNumber);

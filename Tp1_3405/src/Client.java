@@ -12,6 +12,11 @@ import java.net.UnknownHostException;
 
 
 public class Client {
+	public static final String ANSI_RED = "\u001B[31m";
+	public static final String ANSI_WHITE = "\u001B[37m";
+	public static final String ANSI_PURPLE = "\u001B[35m";
+	
+	
 	private static MessageHandler messageHandler;
 	private static Socket socket;
 	private static String username;
@@ -66,7 +71,7 @@ public class Client {
 	        socket = new Socket(serverIP, serverPort);
 	        System.out.format("Connecté au serveur sur [%s%s%s : %s%d%s] %n", Serveur.ANSI_BLUE, serverIP, Serveur.ANSI_WHITE, Serveur.ANSI_BLUE, serverPort, Serveur.ANSI_WHITE);
 	        System.out.println();
-
+	        
 	        DataOutputStream outClient = new DataOutputStream(socket.getOutputStream());
 	        DataInputStream inClient = new DataInputStream(socket.getInputStream());
 	        askingForUsernameAndPassword(inClient, outClient, scanner);
@@ -92,6 +97,56 @@ public class Client {
 	        }
 	    }
 	}
+	
+	public static void sendImageToServer(DataInputStream inClient, DataOutputStream outClient, Scanner scanner) {
+			System.out.println("Voulez-vous envoyer une image? (oui/non)\n");
+			String response = scanner.nextLine();
+			
+			if("oui".equalsIgnoreCase(response)) 
+			{
+				System.out.println("entrer le chemin de l'image : \n");
+				String imagePath = scanner.nextLine();
+				File imageFile = new File(imagePath); //cree un lien vers la location du fichier
+				
+				if (imageFile.exists() && !imageFile.isDirectory()) { 
+				    // vérification si le fichier existe et que ce n'est pas un dossier
+				    try {
+				        FileInputStream fileInput = new FileInputStream(imageFile);
+				        try {
+				            byte[] buffer = new byte[fileInput.available()]; // Cette méthode peut ne pas être sûre pour de gros fichiers
+				            int bytesRead = fileInput.read(buffer);
+				            if (bytesRead == -1) {
+				                throw new IOException("Aucune donnée lue du fichier, il peut être vide.");
+				            }
+
+				            outClient.writeUTF("/image");
+				            outClient.writeInt(buffer.length);
+				            outClient.write(buffer);
+				            System.out.println("Image envoyée pour traitement.\n");
+				            return;
+				        } finally {
+				            fileInput.close(); // Assure que le FileInputStream est fermé même en cas d'erreur
+				        }
+				    } catch (FileNotFoundException e) {
+				        System.out.println("Le fichier n'a pas été trouvé : " + e.getMessage());
+				    } catch (IOException e) {
+				        System.out.println("Erreur lors de la lecture du fichier ou de la communication avec le serveur : " + e.getMessage());
+				    }
+				} else {
+				    System.out.println("Le fichier n'existe pas ou est un dossier.");
+				}
+
+			} 
+			else if("non".equalsIgnoreCase(response)) 
+			{
+				return;
+			}
+			else {
+				System.out.println("Réponse invalide. Veuillez répondre par 'oui' ou 'non'.");
+				sendImageToServer(inClient,outClient,scanner);
+				return;
+			}
+	}
 
 
 	public static void sendMessageToServer(DataInputStream inClient, DataOutputStream outClient, Scanner scanner) {
@@ -100,6 +155,9 @@ public class Client {
 	            String userResponse = scanner.nextLine();
 	            if ("exit".equals(userResponse)) {
 	            	messageHandler.isConnected = false;
+	            }
+	            else if("/image".equals(userResponse)) { //devrait etre starts with. et ensuite on filtre pour prendre le chemin de l'image.
+	            	sendImageToServer(inClient,outClient,scanner);
 	            }
 
 	            outClient.writeUTF(userResponse);

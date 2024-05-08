@@ -22,6 +22,7 @@ public class Serveur {
 	public static final String ANSI_GREEN = "\u001B[32m";
 	public static final String ANSI_BLUE = "\u001B[38;5;189m";
 	public static final String ANSI_GRAY = "\u001B[90m";
+	public static final String ANSI_PURPLE = "\u001B[35m";
 	private static Scanner scanner = new Scanner(System.in);
 	
 	
