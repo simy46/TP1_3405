@@ -35,6 +35,19 @@ public class ClientHandler extends Thread {
 		return database;
 	}
 
+	public void close() {
+	    try {
+	        if (output != null) {
+	            output.close();
+	        }
+	        if (socket != null && !socket.isClosed()) {
+	            socket.close();
+	        }
+	    } catch (IOException e) {
+	        System.out.println("Erreur ClientHandler: Erreur lors de la fermeture du socket : " + e.getMessage());
+	    }
+	}
+
 	public boolean isConnected() {
 	    return isConnected;
 	}
@@ -121,7 +134,7 @@ public class ClientHandler extends Thread {
         try {
             if (isValidMessage(message)) {
                 if ("exit".equalsIgnoreCase(message.trim())) {
-                	serveur.removeClientFromVector(clientNumber);
+                	//serveur.removeClientFromVector(clientNumber);
                     String response = Serveur.ANSI_GRAY + "Déconnexion réussie." + Serveur.ANSI_WHITE + Serveur.time;
                     setConnectedState(false);
                     System.out.println(Serveur.ANSI_BLUE + username + Serveur.ANSI_GRAY + " s'est déconnecté à " + Serveur.ANSI_WHITE + Serveur.time);
@@ -151,26 +164,17 @@ public class ClientHandler extends Thread {
     
     private void receiveAndProcessImage(DataInputStream input) {
         try {
-            int length = input.readInt();  // Lire la taille de l'image
+            int length = input.readInt();
             byte[] imageData = new byte[length];
-            input.readFully(imageData);  // Lire les données de l'image
-
-            // Conversion des données binaires en BufferedImage
+            input.readFully(imageData);
             BufferedImage image = ImageIO.read(new ByteArrayInputStream(imageData));
             if (image == null) {
                 throw new IOException("Le fichier reçu n'est pas une image valide ou n'a pas pu être décodé.");
             }
-
-            // Appliquer le filtre de Sobel
             BufferedImage processedImage = Sobel.process(image);
-
-            // Logique pour gérer l'image après traitement
-            // Par exemple, sauvegarder ou renvoyer l'image, selon les besoins
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ImageIO.write(processedImage, "jpg", baos);
             byte[] processedImageData = baos.toByteArray();
-
-            // Exemple d'envoi de l'image traitée en retour au client (si nécessaire)
             output.writeUTF("/imageProcessed");
             output.writeInt(processedImageData.length);
             output.write(processedImageData);

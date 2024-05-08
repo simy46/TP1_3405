@@ -158,6 +158,7 @@ public class Client {
 	            }
 	            else if("/image".equals(userResponse)) { //devrait etre starts with. et ensuite on filtre pour prendre le chemin de l'image.
 	            	sendImageToServer(inClient,outClient,scanner);
+	            	return;
 	            }
 
 	            outClient.writeUTF(userResponse);

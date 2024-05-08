@@ -15,7 +15,8 @@ public class Serveur {
 	private String serverAddress;
 	private int serverPort;
 	private static int clientNumber = 0;
-    private CopyOnWriteArrayList<ClientHandler> listClientHandler = new CopyOnWriteArrayList<>();
+	 private volatile boolean executionConnectClient = true;
+	private CopyOnWriteArrayList<ClientHandler> listClientHandler = new CopyOnWriteArrayList<>();
 	private LinkedList<String> messages = new LinkedList<>();
 	public static final String ANSI_WHITE = "\u001B[0m";
 	public static final String ANSI_RED = "\u001B[31m";
@@ -24,26 +25,26 @@ public class Serveur {
 	public static final String ANSI_GRAY = "\u001B[90m";
 	public static final String ANSI_PURPLE = "\u001B[35m";
 	private static Scanner scanner = new Scanner(System.in);
-	
-	
+
+
 	public static String time = getCurrentTimeFormatted();
 
 	private static String getCurrentTimeFormatted() {
-	    LocalDateTime now = LocalDateTime.now();
-	    DateTimeFormatter formatter = DateTimeFormatter.ofPattern(" '('dd-MM-yyyy')@'HH:mm:ss");
-	    return now.format(formatter);
+		LocalDateTime now = LocalDateTime.now();
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern(" '('dd-MM-yyyy')@'HH:mm:ss");
+		return now.format(formatter);
 	}
-	
 
-	
+
+
 	public static int getClientNumber() {
-        return clientNumber;
-    }
+		return clientNumber;
+	}
 
-    public static void setClientNumber(int number) {
-        clientNumber = number;
-    }
-	
+	public static void setClientNumber(int number) {
+		clientNumber = number;
+	}
+
 	public static ServerSocket getServerSocket() {
 		return Listener;
 	}
@@ -113,26 +114,33 @@ public class Serveur {
 		} while (!correctPortFormat);
 		return serverPort;
 	}
-	
+
 	private static void displayServer(String serverAddress, int serverPort) {
-	    int boxWidth = 70;
+		int boxWidth = 70;
 
-	    String message = String.format("%sLe serveur fonctionne sur %s%s%s : %s%d%s",
-	            Serveur.ANSI_GREEN,
-	            Serveur.ANSI_BLUE, serverAddress, Serveur.ANSI_WHITE,
-	            Serveur.ANSI_BLUE, serverPort, Serveur.ANSI_WHITE);
+		String message = String.format("%sLe serveur fonctionne sur %s%s%s : %s%d%s",
+				Serveur.ANSI_GREEN,
+				Serveur.ANSI_BLUE, serverAddress, Serveur.ANSI_WHITE,
+				Serveur.ANSI_BLUE, serverPort, Serveur.ANSI_WHITE);
 
+		String exitMessage = String.format("Pour quitter le serveur, tapez %s'exit'%s et appuyez sur Entrée.",
+				Serveur.ANSI_RED, Serveur.ANSI_WHITE);
 
-	    String border = "+" + "-".repeat(boxWidth - 2) + "+";
+		String border = "+" + "-".repeat(boxWidth - 2) + "+";
 
-	    int paddingLength = boxWidth - message.replaceAll("\u001B\\[[;\\d]*m", "").length() - 4;
-	    String padding = " ".repeat(Math.max(0, paddingLength));
-
+	    // sfichage du message de serveur avec padding correct
+	    int paddingLength1 = boxWidth - message.replaceAll("\u001B\\[[;\\d]*m", "").length() - 4;
+	    String padding1 = " ".repeat(Math.max(0, paddingLength1));
 	    System.out.println(border);
-	    System.out.printf("| %s%s |\n", message, padding);
+	    System.out.printf("| %s%s |\n", message, padding1);
+
+	    int paddingLength2 = boxWidth - exitMessage.replaceAll("\u001B\\[[;\\d]*m", "").length() - 4;
+	    String padding2 = " ".repeat(Math.max(0, paddingLength2));
+	    System.out.printf("| %s%s |\n", exitMessage, padding2);
+
 	    System.out.println(border);
 	}
-	
+
 	protected void removeClientFromVector(int clientNumber) {
 		for (ClientHandler x : listClientHandler) {
 			if(x.getClientNumber()== clientNumber) {
@@ -142,40 +150,55 @@ public class Serveur {
 	}
 
 	public void connectClient() throws IOException {
-	    ServerSocket Listener = new ServerSocket();
-	    Listener.setReuseAddress(true);
-	    InetAddress serverIP = InetAddress.getByName(serverAddress);
+		Listener = new ServerSocket();
+		Listener.setReuseAddress(true);
+		InetAddress serverIP = InetAddress.getByName(serverAddress);
 
-	    Listener.bind(new InetSocketAddress(serverIP, serverPort));
-	    
-	    displayServer(serverAddress, serverPort);
-	    
-	    try {
-	        while (true) {
-	        	  ClientHandler newClient = new ClientHandler(Listener.accept(), this, clientNumber++);
-	                listClientHandler.add(newClient);
-	                newClient.start();
-	                if (clientNumber == 0) {
-	                    break;
-	                }
-	        }
-	    } finally {
-	        Listener.close();
-	    }
+		Listener.bind(new InetSocketAddress(serverIP, serverPort));
+
+		displayServer(serverAddress, serverPort);
+
+		new Thread(this::listenForExitCommand).start();
+		try {
+			while (executionConnectClient) {
+//				if (scanner.hasNext()) { //bloque l'execution, FAIRE UN THREAD
+//				    String entry = scanner.nextLine();
+//				    if ("exit".equalsIgnoreCase(entry)) {
+//				        closeServer();
+//				    }
+//				}
+				ClientHandler newClient = new ClientHandler(Listener.accept(), this, clientNumber++);
+				listClientHandler.add(newClient);
+				newClient.start();
+			}
+		} finally {
+			Listener.close();
+		}
 	}
 	
+	 private void listenForExitCommand() {
+	        while (executionConnectClient) {
+	            if (scanner.hasNext()) {
+	                String entry = scanner.nextLine();
+	                if ("exit".equalsIgnoreCase(entry)) {
+	                    closeServer();
+	                }
+	            }
+	        }
+	    }
+
 	protected void addMessageQueue(String newMessage) { 
-	    
+
 		if (messages.size() == 15) {
-		    messages.removeFirst(); 
+			messages.removeFirst(); 
 		}
 		messages.addLast(newMessage);
 	}
-	
+
 	public LinkedList<String> getMessages() { 
 		return new LinkedList<String>(messages);
 	}
-	
+
 	public void writeToEveryClient(int clientNumber, String clientName ,String userInput) throws IOException {
 		for (ClientHandler x : listClientHandler){
 			if ((x.getClientNumber() != clientNumber) && !(x.getClientName().equals(clientName))) {
@@ -185,23 +208,44 @@ public class Serveur {
 			}
 		}
 	}
+
 	private static void closeScanner() {
 		scanner.close();
 	}
 
+	private void closeServer() {
+		try {
+			System.out.println("Arrêt du serveur en cours...");
+
+			String shutdownMessage = Serveur.ANSI_RED + "Le serveur va se fermer. Déconnexion imminente." + Serveur.ANSI_WHITE;
+			writeToEveryClient(-1, "", shutdownMessage);
+
+			for (ClientHandler clientHandler : listClientHandler) {
+				clientHandler.close();
+			}
+			Listener.close(); 
+			System.out.println("Serveur arrêté avec succès.");
+			System.exit(0);
+		} catch (IOException e) {
+			System.out.println("Erreur lors de la fermeture du serveur : " + e.getMessage());
+		}
+	}
+
 	public static void main(String[] args) throws Exception {
-		
+
 		try {
 			Serveur serveur = new Serveur();
 			serveur.serverAddress = askForIP();
 			serveur.serverPort = askForPort();
 			serveur.connectClient();
+
+
 		} catch (IOException e) {
 			System.out.println("Serveur : exception attrape");
-            e.printStackTrace();
-        }
+			e.printStackTrace();
+		}
 		finally{
 			closeScanner();
-        }
+		}
 	}
 }

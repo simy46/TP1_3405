@@ -54,6 +54,7 @@ public class MessageHandler extends Thread {
 	        File outputfile = new File("src/image_retour.jpg");
 	        ImageIO.write(image, "jpg", outputfile);
 	        System.out.println("Image sauvegardée avec succès à : " + outputfile.getAbsolutePath());
+	        return;
 
 	    } catch (IOException e) {
 	        System.out.println("Erreur lors de la réception, conversion ou sauvegarde de l'image: " + e.getMessage());
