@@ -1,6 +1,7 @@
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.net.SocketException;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.Scanner;
@@ -15,7 +16,7 @@ public class Serveur {
 	private String serverAddress;
 	private int serverPort;
 	private static int clientNumber = 0;
-	 private volatile boolean executionConnectClient = true;
+	private volatile boolean executionConnectClient = true;
 	private CopyOnWriteArrayList<ClientHandler> listClientHandler = new CopyOnWriteArrayList<>();
 	private LinkedList<String> messages = new LinkedList<>();
 	public static final String ANSI_WHITE = "\u001B[0m";
@@ -128,17 +129,17 @@ public class Serveur {
 
 		String border = "+" + "-".repeat(boxWidth - 2) + "+";
 
-	    // sfichage du message de serveur avec padding correct
-	    int paddingLength1 = boxWidth - message.replaceAll("\u001B\\[[;\\d]*m", "").length() - 4;
-	    String padding1 = " ".repeat(Math.max(0, paddingLength1));
-	    System.out.println(border);
-	    System.out.printf("| %s%s |\n", message, padding1);
+		// sfichage du message de serveur avec padding correct
+		int paddingLength1 = boxWidth - message.replaceAll("\u001B\\[[;\\d]*m", "").length() - 4;
+		String padding1 = " ".repeat(Math.max(0, paddingLength1));
+		System.out.println(border);
+		System.out.printf("| %s%s |\n", message, padding1);
 
-	    int paddingLength2 = boxWidth - exitMessage.replaceAll("\u001B\\[[;\\d]*m", "").length() - 4;
-	    String padding2 = " ".repeat(Math.max(0, paddingLength2));
-	    System.out.printf("| %s%s |\n", exitMessage, padding2);
+		int paddingLength2 = boxWidth - exitMessage.replaceAll("\u001B\\[[;\\d]*m", "").length() - 4;
+		String padding2 = " ".repeat(Math.max(0, paddingLength2));
+		System.out.printf("| %s%s |\n", exitMessage, padding2);
 
-	    System.out.println(border);
+		System.out.println(border);
 	}
 
 	protected void removeClientFromVector(int clientNumber) {
@@ -161,31 +162,33 @@ public class Serveur {
 		new Thread(this::listenForExitCommand).start();
 		try {
 			while (executionConnectClient) {
-//				if (scanner.hasNext()) { //bloque l'execution, FAIRE UN THREAD
-//				    String entry = scanner.nextLine();
-//				    if ("exit".equalsIgnoreCase(entry)) {
-//				        closeServer();
-//				    }
-//				}
-				ClientHandler newClient = new ClientHandler(Listener.accept(), this, clientNumber++);
+				//				if (scanner.hasNext()) { //bloque l'execution, FAIRE UN THREAD
+				//				    String entry = scanner.nextLine();
+				//				    if ("exit".equalsIgnoreCase(entry)) {
+				//				        closeServer();
+				//				    }
+				//				}
+				ClientHandler newClient = new ClientHandler(Listener.accept(), this, clientNumber++); //ne recoit jamais de premier client. 
 				listClientHandler.add(newClient);
 				newClient.start();
 			}
+		} catch (SocketException e) {
+			System.out.println("Serveur: socket error detected.");
 		} finally {
 			Listener.close();
 		}
 	}
-	
-	 private void listenForExitCommand() {
-	        while (executionConnectClient) {
-	            if (scanner.hasNext()) {
-	                String entry = scanner.nextLine();
-	                if ("exit".equalsIgnoreCase(entry)) {
-	                    closeServer();
-	                }
-	            }
-	        }
-	    }
+
+	private void listenForExitCommand() {
+		while (executionConnectClient) {
+			if (scanner.hasNext()) {
+				String entry = scanner.nextLine();
+				if ("exit".equalsIgnoreCase(entry)) {
+					closeServer();
+				}
+			}
+		}
+	}
 
 	protected void addMessageQueue(String newMessage) { 
 
@@ -201,7 +204,7 @@ public class Serveur {
 
 	public void writeToEveryClient(int clientNumber, String clientName ,String userInput) throws IOException {
 		for (ClientHandler x : listClientHandler){
-			if ((x.getClientNumber() != clientNumber) && !(x.getClientName().equals(clientName))) {
+			if ((x.getClientNumber() != clientNumber) && !(x.getClientName().equals(clientName) || x.getClientName().equals("sans_nom"))) {
 				if (!x.socket.isClosed() && x.socket.isConnected()) {
 					x.getDataOutputStream().writeUTF(userInput);
 				}
@@ -217,13 +220,15 @@ public class Serveur {
 		try {
 			System.out.println("Arrêt du serveur en cours...");
 
-			String shutdownMessage = Serveur.ANSI_RED + "Le serveur va se fermer. Déconnexion imminente." + Serveur.ANSI_WHITE;
-			writeToEveryClient(-1, "", shutdownMessage);
+			String shutDownMessage ="[" + getCurrentTimeFormatted()+ "]: " + ANSI_RED + "Le serveur va se fermer. Déconnexion imminente."  ; //ca ne sera plus un message de fermeture au client , mais plutot un appel au message hanlder qui va fermer les scokets proprement.
+			writeToEveryClient(-100, "", shutDownMessage);
+			writeToEveryClient(-100, "", "/terminate");
 
 			for (ClientHandler clientHandler : listClientHandler) {
-				clientHandler.close();
+				clientHandler.close(); //il reste a implementer une fonction de fermeture sur le client  qui sera appeller ici et gerer dans le message handler.
 			}
 			Listener.close(); 
+			closeScanner();
 			System.out.println("Serveur arrêté avec succès.");
 			System.exit(0);
 		} catch (IOException e) {
@@ -241,11 +246,8 @@ public class Serveur {
 
 
 		} catch (IOException e) {
-			System.out.println("Serveur : exception attrape");
+			System.out.println("Serveur : fin de l'execution");
 			e.printStackTrace();
-		}
-		finally{
-			closeScanner();
 		}
 	}
 }

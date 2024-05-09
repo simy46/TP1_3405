@@ -29,6 +29,7 @@ public class ClientHandler extends Thread {
         System.out.println(String.format("Nouvelle connexion : client #(%d) sur %s" + Serveur.time, clientNumber, socket));
     }
 	public String getClientName() {
+		if (username == null) return "sans_nom";
 		return username;
 	}
 	public static Map<String, String> getDatabase() {

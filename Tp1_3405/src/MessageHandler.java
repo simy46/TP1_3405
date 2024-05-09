@@ -32,15 +32,33 @@ public class MessageHandler extends Thread {
 		}
 	}
 
-	public void handleMessage(String message, DataInputStream in) {
+	public void handleMessage(DataInputStream in) throws InterruptedException {
+		String message = takeMessage();
 		if("/imageProcessed".equals(message)) {
 			processImage(in);
 		} else if (message.startsWith("[") && message.contains("]: ")) {
 			System.out.println(message);
-		} else {
-			processMessages(message);
+		} else if ("/terminate".equals(message)){
+			//Client.closeClientSocket(); //ferme la copie du socket du client et celle du serveur
+			//closeClientHandler();
+			isConnected = false;
+		}else {
+			processMessages(message); //sera depiler plus tard
 		}
 	}
+	public void closeClientHandler() {
+	    try {
+	        // Fermer le socket client
+	        if (socket != null && !socket.isClosed()) {
+	            socket.close();
+	        }
+	        // Interrompre le thread du message handler
+	        interrupt();
+	    } catch (IOException e) {
+	        System.out.println("Erreur lors de la fermeture du socket client : " + e.getMessage());
+	    }
+	}
+
 
 	public void processImage(DataInputStream input) {
 	    try {
@@ -70,16 +88,19 @@ public class MessageHandler extends Thread {
 		while(isConnected) {
 			try {
 				if( socket.isConnected()) {
-					String msg = inClient.readUTF();
-					handleMessage(msg,inClient);
+					processMessages(inClient.readUTF());
+					if (messages.size() > 0)
+						handleMessage(inClient);
 				}
 			} catch (EOFException e) {
 				System.out.println("Message Handler: Connection was terminated unexpectedly.");
 				break;
 			} catch (SocketException e) {
-				System.out.println("Messaage Handler: Socket error, stopping handler.");
+				System.out.println("Messaage Handler: erreur du socket, fermeture du handler.");
 				break;
 			} catch (IOException e) {
+				e.printStackTrace();
+			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
 		}

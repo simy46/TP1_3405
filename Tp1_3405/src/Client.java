@@ -24,7 +24,6 @@ public class Client {
 	private static String serverIP;
 	private static int serverPort;
 	
-
 	public static void askingForUsernameAndPassword(DataInputStream inClient, DataOutputStream outClient, Scanner scanner) {
 	    try {
 	        System.out.println("Entrez votre nom d'utilisateur : ");
@@ -162,7 +161,7 @@ public class Client {
 	            }
 
 	            outClient.writeUTF(userResponse);
-	            String responseFromServer = messageHandler.takeMessage();
+	            String responseFromServer = messageHandler.takeMessage(); //synchroniser les "message délivrés"
 	            System.out.println(responseFromServer);
 	            return; //
 	        }
