@@ -39,24 +39,10 @@ public class MessageHandler extends Thread {
 		} else if (message.startsWith("[") && message.contains("]: ")) {
 			System.out.println(message);
 		} else if ("/terminate".equals(message)){
-			//Client.closeClientSocket(); //ferme la copie du socket du client et celle du serveur
-			//closeClientHandler();
 			isConnected = false;
 		}else {
 			processMessages(message); //sera depiler plus tard
 		}
-	}
-	public void closeClientHandler() {
-	    try {
-	        // Fermer le socket client
-	        if (socket != null && !socket.isClosed()) {
-	            socket.close();
-	        }
-	        // Interrompre le thread du message handler
-	        interrupt();
-	    } catch (IOException e) {
-	        System.out.println("Erreur lors de la fermeture du socket client : " + e.getMessage());
-	    }
 	}
 
 
